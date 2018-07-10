@@ -1,0 +1,56 @@
+version: "3"
+services:
+  nginx:
+    container_name: fitness_nginx
+    build:
+      context: ./nginx
+      args:
+        - UID
+    ports:
+      - 8003:80
+    volumes:
+      - ../www/:/usr/local/openresty/nginx/html/
+      - ./nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf
+      - ./nginx/local.d/:/usr/local/openresty/nginx/conf/conf.d/
+      - ./nginx/log/:/var/log/nginx/
+      - ./lua/:/usr/share/nginx/lua/
+    environment:
+      NLA_CONFIG_COOKIE_KEY: "change this default key, please"
+  postgres_master:
+    container_name: fitness_postgres_master
+    build:
+      context: ./postgres
+    ports:
+      - 5433:5432
+    volumes:
+      - ./postgres/data/master/:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_PASSWORD: "password"
+  postgres_slave1:
+    container_name: fitness_postgres_slave1
+    build:
+      context: ./postgres
+    ports:
+      - 5434:5432
+    volumes:
+      - ./postgres/data/slave1/:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_PASSWORD: "password"
+    depends_on:
+      - postgres_master
+    links:
+      - postgres_master
+  postgres_slave2:
+    container_name: fitness_postgres_slave2
+    build:
+      context: ./postgres
+    ports:
+      - 5435:5432
+    volumes:
+      - ./postgres/data/slave2/:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_PASSWORD: "password"
+    depends_on:
+      - postgres_master
+    links:
+      - postgres_master
