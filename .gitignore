@@ -1,4 +1,6 @@
 /docker/nginx/sock
-!/docker/postgres/Dockerfile
-/docker/postgres
+/docker/postgres/**/*
 /docker/nginx/log
+
+
+!/docker/postgres/Dockerfile
