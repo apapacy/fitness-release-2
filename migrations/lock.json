@@ -33,7 +33,7 @@
           "PrimaryKey": false,
           "Reference": null,
           "NotNull": true,
-          "Unique": false
+          "Unique": true
         },
         {
           "Name": "a2",
@@ -41,7 +41,7 @@
           "PrimaryKey": false,
           "Reference": null,
           "NotNull": true,
-          "Unique": false
+          "Unique": true
         },
         {
           "Name": "a3",
@@ -49,7 +49,7 @@
           "PrimaryKey": false,
           "Reference": null,
           "NotNull": true,
-          "Unique": false
+          "Unique": true
         }
       ]
     },

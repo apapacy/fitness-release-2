@@ -11,3 +11,5 @@ kallax migrate up --dir ./migrations --dsn 'postgres:password@localhost:5433/tes
 kallax migrate up --dir ./my-migrations --dsn 'user:pass@localhost:5432/dbname?sslmode=disable' --version 1493991142
 
 go generate ./model/...
+
+go test -v model/*

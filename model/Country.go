@@ -15,10 +15,13 @@ type Country struct {
 	kallax.Model `table:"countries" pk:"id"`
 	kallax.Timestamps
 	ID kallax.ULID
-	Code int
-	A2 string
-	A3 string
+	Code int  `unique:"true"`
+	A2 string `unique:"true"`
+	A3 string `unique:"true"`
 	Translations []CountryTransaltions
+	Locale string `kallax:"-"`
+	Name string `kallax:"-"`
+	Fullname string `kallax:"-"`
 }
 
 type CountryTransaltions struct {

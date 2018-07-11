@@ -28,26 +28,27 @@ func TestCountryInsert(t *testing.T) {
     },
   }
 
-  countryStore.Insert(&country)
+  err := countryStore.Insert(&country)
+  if err != nil {
+          fmt.Println(err)
+  }
 
-  t.Error("TestCountryInsert Error")
 }
 
 
 func TestCountrySelect(t *testing.T) {
   countryStore := NewCountryStore(GetDB())
-  rs, err := countryStore.Find(NewCountryQuery().WithTranslations(kallax.Eq(Schema.CountryTransaltions.Locale, "ru")).FindByA2("AU"))
+  rs, err := countryStore.Find(NewCountryQuery().WithTranslations(kallax.Eq(Schema.CountryTransaltions.Locale, "ua")).FindByA2("AU"))
   if err != nil {
-          // handle error
+          fmt.Println(err)
   }
 
   for rs.Next() {
           country, err := rs.Get()
-          fmt.Print(country)
+          fmt.Println(country)
           if err != nil {
-                  // handle error
+                  fmt.Println(err)
           }
   }
 
-  t.Error("TestCountrySelectError")
 }
