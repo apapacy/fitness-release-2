@@ -11,21 +11,19 @@ import (
 	//"gopkg.in/src-d/go-kallax.v1/types"
 )
 
-type Country struct {
-	kallax.Model `table:"countries" pk:"id"`
+type City struct {
+	kallax.Model `table:"cities" pk:"id"`
 	kallax.Timestamps
 	ID           kallax.ULID
-	Code         int    `unique:"true"`
-	A2           string `unique:"true"`
-	A3           string `unique:"true"`
-	Translations []CountryTransaltions
+	Country      Country `fk:",inverse"`
+	Translations []CityTransaltions
 	Locale       string `kallax:"-"`
 	Name         string `kallax:"-"`
 	Fullname     string `kallax:"-"`
 }
 
-type CountryTransaltions struct {
-	kallax.Model `table:"countries_translations" pk:"id"`
+type CityTransaltions struct {
+	kallax.Model `table:"cities_translations" pk:"id"`
 	kallax.Timestamps
 	ID       kallax.ULID
 	Locale   string

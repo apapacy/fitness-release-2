@@ -10,6 +10,25 @@ CREATE TABLE countries (
 );
 
 
+CREATE TABLE cities (
+	id uuid NOT NULL PRIMARY KEY,
+	created_at timestamptz NOT NULL,
+	updated_at timestamptz NOT NULL,
+	country_id uuid NOT NULL REFERENCES countries(id)
+);
+
+
+CREATE TABLE cities_translations (
+	id uuid NOT NULL PRIMARY KEY,
+	created_at timestamptz NOT NULL,
+	updated_at timestamptz NOT NULL,
+	locale text NOT NULL,
+	name text NOT NULL,
+	fullname text NOT NULL,
+	city_id uuid NOT NULL REFERENCES cities(id)
+);
+
+
 CREATE TABLE countries_translations (
 	id uuid NOT NULL PRIMARY KEY,
 	created_at timestamptz NOT NULL,
