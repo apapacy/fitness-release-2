@@ -7,6 +7,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"gopkg.in/src-d/go-kallax.v1"
 	"gopkg.in/src-d/go-kallax.v1/types"
@@ -16,6 +17,1609 @@ var _ types.SQLType
 var _ fmt.Formatter
 
 type modelSaveFunc func(*kallax.Store) error
+
+// NewCountry returns a new instance of Country.
+func NewCountry() (record *Country) {
+	return new(Country)
+}
+
+// GetID returns the primary key of the model.
+func (r *Country) GetID() kallax.Identifier {
+	return (*kallax.ULID)(&r.ID)
+}
+
+// ColumnAddress returns the pointer to the value of the given column.
+func (r *Country) ColumnAddress(col string) (interface{}, error) {
+	switch col {
+	case "id":
+		return (*kallax.ULID)(&r.ID), nil
+	case "created_at":
+		return &r.Timestamps.CreatedAt, nil
+	case "updated_at":
+		return &r.Timestamps.UpdatedAt, nil
+	case "code":
+		return &r.Code, nil
+	case "a2":
+		return &r.A2, nil
+	case "a3":
+		return &r.A3, nil
+
+	default:
+		return nil, fmt.Errorf("kallax: invalid column in Country: %s", col)
+	}
+}
+
+// Value returns the value of the given column.
+func (r *Country) Value(col string) (interface{}, error) {
+	switch col {
+	case "id":
+		return r.ID, nil
+	case "created_at":
+		return r.Timestamps.CreatedAt, nil
+	case "updated_at":
+		return r.Timestamps.UpdatedAt, nil
+	case "code":
+		return r.Code, nil
+	case "a2":
+		return r.A2, nil
+	case "a3":
+		return r.A3, nil
+
+	default:
+		return nil, fmt.Errorf("kallax: invalid column in Country: %s", col)
+	}
+}
+
+// NewRelationshipRecord returns a new record for the relatiobship in the given
+// field.
+func (r *Country) NewRelationshipRecord(field string) (kallax.Record, error) {
+	switch field {
+	case "Translations":
+		return new(CountryTransaltions), nil
+
+	}
+	return nil, fmt.Errorf("kallax: model Country has no relationship %s", field)
+}
+
+// SetRelationship sets the given relationship in the given field.
+func (r *Country) SetRelationship(field string, rel interface{}) error {
+	switch field {
+	case "Translations":
+		records, ok := rel.([]kallax.Record)
+		if !ok {
+			return fmt.Errorf("kallax: relationship field %s needs a collection of records, not %T", field, rel)
+		}
+
+		r.Translations = make([]CountryTransaltions, len(records))
+		for i, record := range records {
+			rel, ok := record.(*CountryTransaltions)
+			if !ok {
+				return fmt.Errorf("kallax: element of type %T cannot be added to relationship %s", record, field)
+			}
+			r.Translations[i] = *rel
+		}
+		return nil
+
+	}
+	return fmt.Errorf("kallax: model Country has no relationship %s", field)
+}
+
+// CountryStore is the entity to access the records of the type Country
+// in the database.
+type CountryStore struct {
+	*kallax.Store
+}
+
+// NewCountryStore creates a new instance of CountryStore
+// using a SQL database.
+func NewCountryStore(db *sql.DB) *CountryStore {
+	return &CountryStore{kallax.NewStore(db)}
+}
+
+// GenericStore returns the generic store of this store.
+func (s *CountryStore) GenericStore() *kallax.Store {
+	return s.Store
+}
+
+// SetGenericStore changes the generic store of this store.
+func (s *CountryStore) SetGenericStore(store *kallax.Store) {
+	s.Store = store
+}
+
+// Debug returns a new store that will print all SQL statements to stdout using
+// the log.Printf function.
+func (s *CountryStore) Debug() *CountryStore {
+	return &CountryStore{s.Store.Debug()}
+}
+
+// DebugWith returns a new store that will print all SQL statements using the
+// given logger function.
+func (s *CountryStore) DebugWith(logger kallax.LoggerFunc) *CountryStore {
+	return &CountryStore{s.Store.DebugWith(logger)}
+}
+
+// DisableCacher turns off prepared statements, which can be useful in some scenarios.
+func (s *CountryStore) DisableCacher() *CountryStore {
+	return &CountryStore{s.Store.DisableCacher()}
+}
+
+func (s *CountryStore) relationshipRecords(record *Country) []modelSaveFunc {
+	var result []modelSaveFunc
+
+	for i := range record.Translations {
+		r := &record.Translations[i]
+		if !r.IsSaving() {
+			r.AddVirtualColumn("country_id", record.GetID())
+			result = append(result, func(store *kallax.Store) error {
+				_, err := (&CountryTransaltionsStore{store}).Save(r)
+				return err
+			})
+		}
+	}
+
+	return result
+}
+
+// Insert inserts a Country in the database. A non-persisted object is
+// required for this operation.
+func (s *CountryStore) Insert(record *Country) error {
+	record.SetSaving(true)
+	defer record.SetSaving(false)
+
+	record.CreatedAt = record.CreatedAt.Truncate(time.Microsecond)
+	record.UpdatedAt = record.UpdatedAt.Truncate(time.Microsecond)
+
+	if err := record.BeforeSave(); err != nil {
+		return err
+	}
+
+	records := s.relationshipRecords(record)
+
+	if len(records) > 0 {
+		return s.Store.Transaction(func(s *kallax.Store) error {
+			if err := s.Insert(Schema.Country.BaseSchema, record); err != nil {
+				return err
+			}
+
+			for _, r := range records {
+				if err := r(s); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+	}
+
+	return s.Store.Insert(Schema.Country.BaseSchema, record)
+}
+
+// Update updates the given record on the database. If the columns are given,
+// only these columns will be updated. Otherwise all of them will be.
+// Be very careful with this, as you will have a potentially different object
+// in memory but not on the database.
+// Only writable records can be updated. Writable objects are those that have
+// been just inserted or retrieved using a query with no custom select fields.
+func (s *CountryStore) Update(record *Country, cols ...kallax.SchemaField) (updated int64, err error) {
+	record.CreatedAt = record.CreatedAt.Truncate(time.Microsecond)
+	record.UpdatedAt = record.UpdatedAt.Truncate(time.Microsecond)
+
+	record.SetSaving(true)
+	defer record.SetSaving(false)
+
+	if err := record.BeforeSave(); err != nil {
+		return 0, err
+	}
+
+	records := s.relationshipRecords(record)
+
+	if len(records) > 0 {
+		err = s.Store.Transaction(func(s *kallax.Store) error {
+			updated, err = s.Update(Schema.Country.BaseSchema, record, cols...)
+			if err != nil {
+				return err
+			}
+
+			for _, r := range records {
+				if err := r(s); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			return 0, err
+		}
+
+		return updated, nil
+	}
+
+	return s.Store.Update(Schema.Country.BaseSchema, record, cols...)
+}
+
+// Save inserts the object if the record is not persisted, otherwise it updates
+// it. Same rules of Update and Insert apply depending on the case.
+func (s *CountryStore) Save(record *Country) (updated bool, err error) {
+	if !record.IsPersisted() {
+		return false, s.Insert(record)
+	}
+
+	rowsUpdated, err := s.Update(record)
+	if err != nil {
+		return false, err
+	}
+
+	return rowsUpdated > 0, nil
+}
+
+// Delete removes the given record from the database.
+func (s *CountryStore) Delete(record *Country) error {
+	return s.Store.Delete(Schema.Country.BaseSchema, record)
+}
+
+// Find returns the set of results for the given query.
+func (s *CountryStore) Find(q *CountryQuery) (*CountryResultSet, error) {
+	rs, err := s.Store.Find(q)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewCountryResultSet(rs), nil
+}
+
+// MustFind returns the set of results for the given query, but panics if there
+// is any error.
+func (s *CountryStore) MustFind(q *CountryQuery) *CountryResultSet {
+	return NewCountryResultSet(s.Store.MustFind(q))
+}
+
+// Count returns the number of rows that would be retrieved with the given
+// query.
+func (s *CountryStore) Count(q *CountryQuery) (int64, error) {
+	return s.Store.Count(q)
+}
+
+// MustCount returns the number of rows that would be retrieved with the given
+// query, but panics if there is an error.
+func (s *CountryStore) MustCount(q *CountryQuery) int64 {
+	return s.Store.MustCount(q)
+}
+
+// FindOne returns the first row returned by the given query.
+// `ErrNotFound` is returned if there are no results.
+func (s *CountryStore) FindOne(q *CountryQuery) (*Country, error) {
+	q.Limit(1)
+	q.Offset(0)
+	rs, err := s.Find(q)
+	if err != nil {
+		return nil, err
+	}
+
+	if !rs.Next() {
+		return nil, kallax.ErrNotFound
+	}
+
+	record, err := rs.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rs.Close(); err != nil {
+		return nil, err
+	}
+
+	return record, nil
+}
+
+// FindAll returns a list of all the rows returned by the given query.
+func (s *CountryStore) FindAll(q *CountryQuery) ([]*Country, error) {
+	rs, err := s.Find(q)
+	if err != nil {
+		return nil, err
+	}
+
+	return rs.All()
+}
+
+// MustFindOne returns the first row retrieved by the given query. It panics
+// if there is an error or if there are no rows.
+func (s *CountryStore) MustFindOne(q *CountryQuery) *Country {
+	record, err := s.FindOne(q)
+	if err != nil {
+		panic(err)
+	}
+	return record
+}
+
+// Reload refreshes the Country with the data in the database and
+// makes it writable.
+func (s *CountryStore) Reload(record *Country) error {
+	return s.Store.Reload(Schema.Country.BaseSchema, record)
+}
+
+// Transaction executes the given callback in a transaction and rollbacks if
+// an error is returned.
+// The transaction is only open in the store passed as a parameter to the
+// callback.
+func (s *CountryStore) Transaction(callback func(*CountryStore) error) error {
+	if callback == nil {
+		return kallax.ErrInvalidTxCallback
+	}
+
+	return s.Store.Transaction(func(store *kallax.Store) error {
+		return callback(&CountryStore{store})
+	})
+}
+
+// RemoveTranslations removes the given items of the Translations field of the
+// model. If no items are given, it removes all of them.
+// The items will also be removed from the passed record inside this method.
+// Note that is required that `Translations` is not empty. This method clears the
+// the elements of Translations in a model, it does not retrieve them to know
+// what relationships the model has.
+func (s *CountryStore) RemoveTranslations(record *Country, deleted ...CountryTransaltions) error {
+	var updated []CountryTransaltions
+	var clear bool
+	if len(deleted) == 0 {
+		clear = true
+		deleted = record.Translations
+		if len(deleted) == 0 {
+			return nil
+		}
+	}
+
+	if len(deleted) > 1 {
+		err := s.Store.Transaction(func(s *kallax.Store) error {
+			for _, d := range deleted {
+				var r kallax.Record = &d
+
+				if beforeDeleter, ok := r.(kallax.BeforeDeleter); ok {
+					if err := beforeDeleter.BeforeDelete(); err != nil {
+						return err
+					}
+				}
+
+				if err := s.Delete(Schema.CountryTransaltions.BaseSchema, &d); err != nil {
+					return err
+				}
+
+				if afterDeleter, ok := r.(kallax.AfterDeleter); ok {
+					if err := afterDeleter.AfterDelete(); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+
+		if clear {
+			record.Translations = nil
+			return nil
+		}
+	} else {
+		var r kallax.Record = &deleted[0]
+		if beforeDeleter, ok := r.(kallax.BeforeDeleter); ok {
+			if err := beforeDeleter.BeforeDelete(); err != nil {
+				return err
+			}
+		}
+
+		var err error
+		if afterDeleter, ok := r.(kallax.AfterDeleter); ok {
+			err = s.Store.Transaction(func(s *kallax.Store) error {
+				err := s.Delete(Schema.CountryTransaltions.BaseSchema, r)
+				if err != nil {
+					return err
+				}
+
+				return afterDeleter.AfterDelete()
+			})
+		} else {
+			err = s.Store.Delete(Schema.CountryTransaltions.BaseSchema, &deleted[0])
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, r := range record.Translations {
+		var found bool
+		for _, d := range deleted {
+			if d.GetID().Equals(r.GetID()) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			updated = append(updated, r)
+		}
+	}
+	record.Translations = updated
+	return nil
+}
+
+// CountryQuery is the object used to create queries for the Country
+// entity.
+type CountryQuery struct {
+	*kallax.BaseQuery
+}
+
+// NewCountryQuery returns a new instance of CountryQuery.
+func NewCountryQuery() *CountryQuery {
+	return &CountryQuery{
+		BaseQuery: kallax.NewBaseQuery(Schema.Country.BaseSchema),
+	}
+}
+
+// Select adds columns to select in the query.
+func (q *CountryQuery) Select(columns ...kallax.SchemaField) *CountryQuery {
+	if len(columns) == 0 {
+		return q
+	}
+	q.BaseQuery.Select(columns...)
+	return q
+}
+
+// SelectNot excludes columns from being selected in the query.
+func (q *CountryQuery) SelectNot(columns ...kallax.SchemaField) *CountryQuery {
+	q.BaseQuery.SelectNot(columns...)
+	return q
+}
+
+// Copy returns a new identical copy of the query. Remember queries are mutable
+// so make a copy any time you need to reuse them.
+func (q *CountryQuery) Copy() *CountryQuery {
+	return &CountryQuery{
+		BaseQuery: q.BaseQuery.Copy(),
+	}
+}
+
+// Order adds order clauses to the query for the given columns.
+func (q *CountryQuery) Order(cols ...kallax.ColumnOrder) *CountryQuery {
+	q.BaseQuery.Order(cols...)
+	return q
+}
+
+// BatchSize sets the number of items to fetch per batch when there are 1:N
+// relationships selected in the query.
+func (q *CountryQuery) BatchSize(size uint64) *CountryQuery {
+	q.BaseQuery.BatchSize(size)
+	return q
+}
+
+// Limit sets the max number of items to retrieve.
+func (q *CountryQuery) Limit(n uint64) *CountryQuery {
+	q.BaseQuery.Limit(n)
+	return q
+}
+
+// Offset sets the number of items to skip from the result set of items.
+func (q *CountryQuery) Offset(n uint64) *CountryQuery {
+	q.BaseQuery.Offset(n)
+	return q
+}
+
+// Where adds a condition to the query. All conditions added are concatenated
+// using a logical AND.
+func (q *CountryQuery) Where(cond kallax.Condition) *CountryQuery {
+	q.BaseQuery.Where(cond)
+	return q
+}
+
+func (q *CountryQuery) WithTranslations(cond kallax.Condition) *CountryQuery {
+	q.AddRelation(Schema.CountryTransaltions.BaseSchema, "Translations", kallax.OneToMany, cond)
+	return q
+}
+
+// FindByID adds a new filter to the query that will require that
+// the ID property is equal to one of the passed values; if no passed values,
+// it will do nothing.
+func (q *CountryQuery) FindByID(v ...kallax.ULID) *CountryQuery {
+	if len(v) == 0 {
+		return q
+	}
+	values := make([]interface{}, len(v))
+	for i, val := range v {
+		values[i] = val
+	}
+	return q.Where(kallax.In(Schema.Country.ID, values...))
+}
+
+// FindByCreatedAt adds a new filter to the query that will require that
+// the CreatedAt property is equal to the passed value.
+func (q *CountryQuery) FindByCreatedAt(cond kallax.ScalarCond, v time.Time) *CountryQuery {
+	return q.Where(cond(Schema.Country.CreatedAt, v))
+}
+
+// FindByUpdatedAt adds a new filter to the query that will require that
+// the UpdatedAt property is equal to the passed value.
+func (q *CountryQuery) FindByUpdatedAt(cond kallax.ScalarCond, v time.Time) *CountryQuery {
+	return q.Where(cond(Schema.Country.UpdatedAt, v))
+}
+
+// FindByCode adds a new filter to the query that will require that
+// the Code property is equal to the passed value.
+func (q *CountryQuery) FindByCode(cond kallax.ScalarCond, v int) *CountryQuery {
+	return q.Where(cond(Schema.Country.Code, v))
+}
+
+// FindByA2 adds a new filter to the query that will require that
+// the A2 property is equal to the passed value.
+func (q *CountryQuery) FindByA2(v string) *CountryQuery {
+	return q.Where(kallax.Eq(Schema.Country.A2, v))
+}
+
+// FindByA3 adds a new filter to the query that will require that
+// the A3 property is equal to the passed value.
+func (q *CountryQuery) FindByA3(v string) *CountryQuery {
+	return q.Where(kallax.Eq(Schema.Country.A3, v))
+}
+
+// CountryResultSet is the set of results returned by a query to the
+// database.
+type CountryResultSet struct {
+	ResultSet kallax.ResultSet
+	last      *Country
+	lastErr   error
+}
+
+// NewCountryResultSet creates a new result set for rows of the type
+// Country.
+func NewCountryResultSet(rs kallax.ResultSet) *CountryResultSet {
+	return &CountryResultSet{ResultSet: rs}
+}
+
+// Next fetches the next item in the result set and returns true if there is
+// a next item.
+// The result set is closed automatically when there are no more items.
+func (rs *CountryResultSet) Next() bool {
+	if !rs.ResultSet.Next() {
+		rs.lastErr = rs.ResultSet.Close()
+		rs.last = nil
+		return false
+	}
+
+	var record kallax.Record
+	record, rs.lastErr = rs.ResultSet.Get(Schema.Country.BaseSchema)
+	if rs.lastErr != nil {
+		rs.last = nil
+	} else {
+		var ok bool
+		rs.last, ok = record.(*Country)
+		if !ok {
+			rs.lastErr = fmt.Errorf("kallax: unable to convert record to *Country")
+			rs.last = nil
+		}
+	}
+
+	return true
+}
+
+// Get retrieves the last fetched item from the result set and the last error.
+func (rs *CountryResultSet) Get() (*Country, error) {
+	return rs.last, rs.lastErr
+}
+
+// ForEach iterates over the complete result set passing every record found to
+// the given callback. It is possible to stop the iteration by returning
+// `kallax.ErrStop` in the callback.
+// Result set is always closed at the end.
+func (rs *CountryResultSet) ForEach(fn func(*Country) error) error {
+	for rs.Next() {
+		record, err := rs.Get()
+		if err != nil {
+			return err
+		}
+
+		if err := fn(record); err != nil {
+			if err == kallax.ErrStop {
+				return rs.Close()
+			}
+
+			return err
+		}
+	}
+	return nil
+}
+
+// All returns all records on the result set and closes the result set.
+func (rs *CountryResultSet) All() ([]*Country, error) {
+	var result []*Country
+	for rs.Next() {
+		record, err := rs.Get()
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, record)
+	}
+	return result, nil
+}
+
+// One returns the first record on the result set and closes the result set.
+func (rs *CountryResultSet) One() (*Country, error) {
+	if !rs.Next() {
+		return nil, kallax.ErrNotFound
+	}
+
+	record, err := rs.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rs.Close(); err != nil {
+		return nil, err
+	}
+
+	return record, nil
+}
+
+// Err returns the last error occurred.
+func (rs *CountryResultSet) Err() error {
+	return rs.lastErr
+}
+
+// Close closes the result set.
+func (rs *CountryResultSet) Close() error {
+	return rs.ResultSet.Close()
+}
+
+// NewCountryTransaltions returns a new instance of CountryTransaltions.
+func NewCountryTransaltions() (record *CountryTransaltions) {
+	return new(CountryTransaltions)
+}
+
+// GetID returns the primary key of the model.
+func (r *CountryTransaltions) GetID() kallax.Identifier {
+	return (*kallax.ULID)(&r.ID)
+}
+
+// ColumnAddress returns the pointer to the value of the given column.
+func (r *CountryTransaltions) ColumnAddress(col string) (interface{}, error) {
+	switch col {
+	case "id":
+		return (*kallax.ULID)(&r.ID), nil
+	case "created_at":
+		return &r.Timestamps.CreatedAt, nil
+	case "updated_at":
+		return &r.Timestamps.UpdatedAt, nil
+	case "locale":
+		return &r.Locale, nil
+	case "name":
+		return &r.Name, nil
+	case "fullname":
+		return &r.Fullname, nil
+	case "country_id":
+		return types.Nullable(kallax.VirtualColumn("country_id", r, new(kallax.ULID))), nil
+
+	default:
+		return nil, fmt.Errorf("kallax: invalid column in CountryTransaltions: %s", col)
+	}
+}
+
+// Value returns the value of the given column.
+func (r *CountryTransaltions) Value(col string) (interface{}, error) {
+	switch col {
+	case "id":
+		return r.ID, nil
+	case "created_at":
+		return r.Timestamps.CreatedAt, nil
+	case "updated_at":
+		return r.Timestamps.UpdatedAt, nil
+	case "locale":
+		return r.Locale, nil
+	case "name":
+		return r.Name, nil
+	case "fullname":
+		return r.Fullname, nil
+	case "country_id":
+		v := r.Model.VirtualColumn(col)
+		if v == nil {
+			return nil, kallax.ErrEmptyVirtualColumn
+		}
+		return v, nil
+
+	default:
+		return nil, fmt.Errorf("kallax: invalid column in CountryTransaltions: %s", col)
+	}
+}
+
+// NewRelationshipRecord returns a new record for the relatiobship in the given
+// field.
+func (r *CountryTransaltions) NewRelationshipRecord(field string) (kallax.Record, error) {
+	return nil, fmt.Errorf("kallax: model CountryTransaltions has no relationships")
+}
+
+// SetRelationship sets the given relationship in the given field.
+func (r *CountryTransaltions) SetRelationship(field string, rel interface{}) error {
+	return fmt.Errorf("kallax: model CountryTransaltions has no relationships")
+}
+
+// CountryTransaltionsStore is the entity to access the records of the type CountryTransaltions
+// in the database.
+type CountryTransaltionsStore struct {
+	*kallax.Store
+}
+
+// NewCountryTransaltionsStore creates a new instance of CountryTransaltionsStore
+// using a SQL database.
+func NewCountryTransaltionsStore(db *sql.DB) *CountryTransaltionsStore {
+	return &CountryTransaltionsStore{kallax.NewStore(db)}
+}
+
+// GenericStore returns the generic store of this store.
+func (s *CountryTransaltionsStore) GenericStore() *kallax.Store {
+	return s.Store
+}
+
+// SetGenericStore changes the generic store of this store.
+func (s *CountryTransaltionsStore) SetGenericStore(store *kallax.Store) {
+	s.Store = store
+}
+
+// Debug returns a new store that will print all SQL statements to stdout using
+// the log.Printf function.
+func (s *CountryTransaltionsStore) Debug() *CountryTransaltionsStore {
+	return &CountryTransaltionsStore{s.Store.Debug()}
+}
+
+// DebugWith returns a new store that will print all SQL statements using the
+// given logger function.
+func (s *CountryTransaltionsStore) DebugWith(logger kallax.LoggerFunc) *CountryTransaltionsStore {
+	return &CountryTransaltionsStore{s.Store.DebugWith(logger)}
+}
+
+// DisableCacher turns off prepared statements, which can be useful in some scenarios.
+func (s *CountryTransaltionsStore) DisableCacher() *CountryTransaltionsStore {
+	return &CountryTransaltionsStore{s.Store.DisableCacher()}
+}
+
+// Insert inserts a CountryTransaltions in the database. A non-persisted object is
+// required for this operation.
+func (s *CountryTransaltionsStore) Insert(record *CountryTransaltions) error {
+	record.SetSaving(true)
+	defer record.SetSaving(false)
+
+	record.CreatedAt = record.CreatedAt.Truncate(time.Microsecond)
+	record.UpdatedAt = record.UpdatedAt.Truncate(time.Microsecond)
+
+	if err := record.BeforeSave(); err != nil {
+		return err
+	}
+
+	return s.Store.Insert(Schema.CountryTransaltions.BaseSchema, record)
+}
+
+// Update updates the given record on the database. If the columns are given,
+// only these columns will be updated. Otherwise all of them will be.
+// Be very careful with this, as you will have a potentially different object
+// in memory but not on the database.
+// Only writable records can be updated. Writable objects are those that have
+// been just inserted or retrieved using a query with no custom select fields.
+func (s *CountryTransaltionsStore) Update(record *CountryTransaltions, cols ...kallax.SchemaField) (updated int64, err error) {
+	record.CreatedAt = record.CreatedAt.Truncate(time.Microsecond)
+	record.UpdatedAt = record.UpdatedAt.Truncate(time.Microsecond)
+
+	record.SetSaving(true)
+	defer record.SetSaving(false)
+
+	if err := record.BeforeSave(); err != nil {
+		return 0, err
+	}
+
+	return s.Store.Update(Schema.CountryTransaltions.BaseSchema, record, cols...)
+}
+
+// Save inserts the object if the record is not persisted, otherwise it updates
+// it. Same rules of Update and Insert apply depending on the case.
+func (s *CountryTransaltionsStore) Save(record *CountryTransaltions) (updated bool, err error) {
+	if !record.IsPersisted() {
+		return false, s.Insert(record)
+	}
+
+	rowsUpdated, err := s.Update(record)
+	if err != nil {
+		return false, err
+	}
+
+	return rowsUpdated > 0, nil
+}
+
+// Delete removes the given record from the database.
+func (s *CountryTransaltionsStore) Delete(record *CountryTransaltions) error {
+	return s.Store.Delete(Schema.CountryTransaltions.BaseSchema, record)
+}
+
+// Find returns the set of results for the given query.
+func (s *CountryTransaltionsStore) Find(q *CountryTransaltionsQuery) (*CountryTransaltionsResultSet, error) {
+	rs, err := s.Store.Find(q)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewCountryTransaltionsResultSet(rs), nil
+}
+
+// MustFind returns the set of results for the given query, but panics if there
+// is any error.
+func (s *CountryTransaltionsStore) MustFind(q *CountryTransaltionsQuery) *CountryTransaltionsResultSet {
+	return NewCountryTransaltionsResultSet(s.Store.MustFind(q))
+}
+
+// Count returns the number of rows that would be retrieved with the given
+// query.
+func (s *CountryTransaltionsStore) Count(q *CountryTransaltionsQuery) (int64, error) {
+	return s.Store.Count(q)
+}
+
+// MustCount returns the number of rows that would be retrieved with the given
+// query, but panics if there is an error.
+func (s *CountryTransaltionsStore) MustCount(q *CountryTransaltionsQuery) int64 {
+	return s.Store.MustCount(q)
+}
+
+// FindOne returns the first row returned by the given query.
+// `ErrNotFound` is returned if there are no results.
+func (s *CountryTransaltionsStore) FindOne(q *CountryTransaltionsQuery) (*CountryTransaltions, error) {
+	q.Limit(1)
+	q.Offset(0)
+	rs, err := s.Find(q)
+	if err != nil {
+		return nil, err
+	}
+
+	if !rs.Next() {
+		return nil, kallax.ErrNotFound
+	}
+
+	record, err := rs.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rs.Close(); err != nil {
+		return nil, err
+	}
+
+	return record, nil
+}
+
+// FindAll returns a list of all the rows returned by the given query.
+func (s *CountryTransaltionsStore) FindAll(q *CountryTransaltionsQuery) ([]*CountryTransaltions, error) {
+	rs, err := s.Find(q)
+	if err != nil {
+		return nil, err
+	}
+
+	return rs.All()
+}
+
+// MustFindOne returns the first row retrieved by the given query. It panics
+// if there is an error or if there are no rows.
+func (s *CountryTransaltionsStore) MustFindOne(q *CountryTransaltionsQuery) *CountryTransaltions {
+	record, err := s.FindOne(q)
+	if err != nil {
+		panic(err)
+	}
+	return record
+}
+
+// Reload refreshes the CountryTransaltions with the data in the database and
+// makes it writable.
+func (s *CountryTransaltionsStore) Reload(record *CountryTransaltions) error {
+	return s.Store.Reload(Schema.CountryTransaltions.BaseSchema, record)
+}
+
+// Transaction executes the given callback in a transaction and rollbacks if
+// an error is returned.
+// The transaction is only open in the store passed as a parameter to the
+// callback.
+func (s *CountryTransaltionsStore) Transaction(callback func(*CountryTransaltionsStore) error) error {
+	if callback == nil {
+		return kallax.ErrInvalidTxCallback
+	}
+
+	return s.Store.Transaction(func(store *kallax.Store) error {
+		return callback(&CountryTransaltionsStore{store})
+	})
+}
+
+// CountryTransaltionsQuery is the object used to create queries for the CountryTransaltions
+// entity.
+type CountryTransaltionsQuery struct {
+	*kallax.BaseQuery
+}
+
+// NewCountryTransaltionsQuery returns a new instance of CountryTransaltionsQuery.
+func NewCountryTransaltionsQuery() *CountryTransaltionsQuery {
+	return &CountryTransaltionsQuery{
+		BaseQuery: kallax.NewBaseQuery(Schema.CountryTransaltions.BaseSchema),
+	}
+}
+
+// Select adds columns to select in the query.
+func (q *CountryTransaltionsQuery) Select(columns ...kallax.SchemaField) *CountryTransaltionsQuery {
+	if len(columns) == 0 {
+		return q
+	}
+	q.BaseQuery.Select(columns...)
+	return q
+}
+
+// SelectNot excludes columns from being selected in the query.
+func (q *CountryTransaltionsQuery) SelectNot(columns ...kallax.SchemaField) *CountryTransaltionsQuery {
+	q.BaseQuery.SelectNot(columns...)
+	return q
+}
+
+// Copy returns a new identical copy of the query. Remember queries are mutable
+// so make a copy any time you need to reuse them.
+func (q *CountryTransaltionsQuery) Copy() *CountryTransaltionsQuery {
+	return &CountryTransaltionsQuery{
+		BaseQuery: q.BaseQuery.Copy(),
+	}
+}
+
+// Order adds order clauses to the query for the given columns.
+func (q *CountryTransaltionsQuery) Order(cols ...kallax.ColumnOrder) *CountryTransaltionsQuery {
+	q.BaseQuery.Order(cols...)
+	return q
+}
+
+// BatchSize sets the number of items to fetch per batch when there are 1:N
+// relationships selected in the query.
+func (q *CountryTransaltionsQuery) BatchSize(size uint64) *CountryTransaltionsQuery {
+	q.BaseQuery.BatchSize(size)
+	return q
+}
+
+// Limit sets the max number of items to retrieve.
+func (q *CountryTransaltionsQuery) Limit(n uint64) *CountryTransaltionsQuery {
+	q.BaseQuery.Limit(n)
+	return q
+}
+
+// Offset sets the number of items to skip from the result set of items.
+func (q *CountryTransaltionsQuery) Offset(n uint64) *CountryTransaltionsQuery {
+	q.BaseQuery.Offset(n)
+	return q
+}
+
+// Where adds a condition to the query. All conditions added are concatenated
+// using a logical AND.
+func (q *CountryTransaltionsQuery) Where(cond kallax.Condition) *CountryTransaltionsQuery {
+	q.BaseQuery.Where(cond)
+	return q
+}
+
+// FindByID adds a new filter to the query that will require that
+// the ID property is equal to one of the passed values; if no passed values,
+// it will do nothing.
+func (q *CountryTransaltionsQuery) FindByID(v ...kallax.ULID) *CountryTransaltionsQuery {
+	if len(v) == 0 {
+		return q
+	}
+	values := make([]interface{}, len(v))
+	for i, val := range v {
+		values[i] = val
+	}
+	return q.Where(kallax.In(Schema.CountryTransaltions.ID, values...))
+}
+
+// FindByCreatedAt adds a new filter to the query that will require that
+// the CreatedAt property is equal to the passed value.
+func (q *CountryTransaltionsQuery) FindByCreatedAt(cond kallax.ScalarCond, v time.Time) *CountryTransaltionsQuery {
+	return q.Where(cond(Schema.CountryTransaltions.CreatedAt, v))
+}
+
+// FindByUpdatedAt adds a new filter to the query that will require that
+// the UpdatedAt property is equal to the passed value.
+func (q *CountryTransaltionsQuery) FindByUpdatedAt(cond kallax.ScalarCond, v time.Time) *CountryTransaltionsQuery {
+	return q.Where(cond(Schema.CountryTransaltions.UpdatedAt, v))
+}
+
+// FindByLocale adds a new filter to the query that will require that
+// the Locale property is equal to the passed value.
+func (q *CountryTransaltionsQuery) FindByLocale(v string) *CountryTransaltionsQuery {
+	return q.Where(kallax.Eq(Schema.CountryTransaltions.Locale, v))
+}
+
+// FindByName adds a new filter to the query that will require that
+// the Name property is equal to the passed value.
+func (q *CountryTransaltionsQuery) FindByName(v string) *CountryTransaltionsQuery {
+	return q.Where(kallax.Eq(Schema.CountryTransaltions.Name, v))
+}
+
+// FindByFullname adds a new filter to the query that will require that
+// the Fullname property is equal to the passed value.
+func (q *CountryTransaltionsQuery) FindByFullname(v string) *CountryTransaltionsQuery {
+	return q.Where(kallax.Eq(Schema.CountryTransaltions.Fullname, v))
+}
+
+// CountryTransaltionsResultSet is the set of results returned by a query to the
+// database.
+type CountryTransaltionsResultSet struct {
+	ResultSet kallax.ResultSet
+	last      *CountryTransaltions
+	lastErr   error
+}
+
+// NewCountryTransaltionsResultSet creates a new result set for rows of the type
+// CountryTransaltions.
+func NewCountryTransaltionsResultSet(rs kallax.ResultSet) *CountryTransaltionsResultSet {
+	return &CountryTransaltionsResultSet{ResultSet: rs}
+}
+
+// Next fetches the next item in the result set and returns true if there is
+// a next item.
+// The result set is closed automatically when there are no more items.
+func (rs *CountryTransaltionsResultSet) Next() bool {
+	if !rs.ResultSet.Next() {
+		rs.lastErr = rs.ResultSet.Close()
+		rs.last = nil
+		return false
+	}
+
+	var record kallax.Record
+	record, rs.lastErr = rs.ResultSet.Get(Schema.CountryTransaltions.BaseSchema)
+	if rs.lastErr != nil {
+		rs.last = nil
+	} else {
+		var ok bool
+		rs.last, ok = record.(*CountryTransaltions)
+		if !ok {
+			rs.lastErr = fmt.Errorf("kallax: unable to convert record to *CountryTransaltions")
+			rs.last = nil
+		}
+	}
+
+	return true
+}
+
+// Get retrieves the last fetched item from the result set and the last error.
+func (rs *CountryTransaltionsResultSet) Get() (*CountryTransaltions, error) {
+	return rs.last, rs.lastErr
+}
+
+// ForEach iterates over the complete result set passing every record found to
+// the given callback. It is possible to stop the iteration by returning
+// `kallax.ErrStop` in the callback.
+// Result set is always closed at the end.
+func (rs *CountryTransaltionsResultSet) ForEach(fn func(*CountryTransaltions) error) error {
+	for rs.Next() {
+		record, err := rs.Get()
+		if err != nil {
+			return err
+		}
+
+		if err := fn(record); err != nil {
+			if err == kallax.ErrStop {
+				return rs.Close()
+			}
+
+			return err
+		}
+	}
+	return nil
+}
+
+// All returns all records on the result set and closes the result set.
+func (rs *CountryTransaltionsResultSet) All() ([]*CountryTransaltions, error) {
+	var result []*CountryTransaltions
+	for rs.Next() {
+		record, err := rs.Get()
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, record)
+	}
+	return result, nil
+}
+
+// One returns the first record on the result set and closes the result set.
+func (rs *CountryTransaltionsResultSet) One() (*CountryTransaltions, error) {
+	if !rs.Next() {
+		return nil, kallax.ErrNotFound
+	}
+
+	record, err := rs.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rs.Close(); err != nil {
+		return nil, err
+	}
+
+	return record, nil
+}
+
+// Err returns the last error occurred.
+func (rs *CountryTransaltionsResultSet) Err() error {
+	return rs.lastErr
+}
+
+// Close closes the result set.
+func (rs *CountryTransaltionsResultSet) Close() error {
+	return rs.ResultSet.Close()
+}
+
+// NewRegistration returns a new instance of Registration.
+func NewRegistration() (record *Registration) {
+	return new(Registration)
+}
+
+// GetID returns the primary key of the model.
+func (r *Registration) GetID() kallax.Identifier {
+	return (*kallax.ULID)(&r.ID)
+}
+
+// ColumnAddress returns the pointer to the value of the given column.
+func (r *Registration) ColumnAddress(col string) (interface{}, error) {
+	switch col {
+	case "id":
+		return (*kallax.ULID)(&r.ID), nil
+	case "created_at":
+		return &r.Timestamps.CreatedAt, nil
+	case "updated_at":
+		return &r.Timestamps.UpdatedAt, nil
+	case "username":
+		return &r.Username, nil
+	case "email":
+		return &r.Email, nil
+	case "password":
+		return &r.Password, nil
+
+	default:
+		return nil, fmt.Errorf("kallax: invalid column in Registration: %s", col)
+	}
+}
+
+// Value returns the value of the given column.
+func (r *Registration) Value(col string) (interface{}, error) {
+	switch col {
+	case "id":
+		return r.ID, nil
+	case "created_at":
+		return r.Timestamps.CreatedAt, nil
+	case "updated_at":
+		return r.Timestamps.UpdatedAt, nil
+	case "username":
+		return r.Username, nil
+	case "email":
+		return r.Email, nil
+	case "password":
+		return r.Password, nil
+
+	default:
+		return nil, fmt.Errorf("kallax: invalid column in Registration: %s", col)
+	}
+}
+
+// NewRelationshipRecord returns a new record for the relatiobship in the given
+// field.
+func (r *Registration) NewRelationshipRecord(field string) (kallax.Record, error) {
+	return nil, fmt.Errorf("kallax: model Registration has no relationships")
+}
+
+// SetRelationship sets the given relationship in the given field.
+func (r *Registration) SetRelationship(field string, rel interface{}) error {
+	return fmt.Errorf("kallax: model Registration has no relationships")
+}
+
+// RegistrationStore is the entity to access the records of the type Registration
+// in the database.
+type RegistrationStore struct {
+	*kallax.Store
+}
+
+// NewRegistrationStore creates a new instance of RegistrationStore
+// using a SQL database.
+func NewRegistrationStore(db *sql.DB) *RegistrationStore {
+	return &RegistrationStore{kallax.NewStore(db)}
+}
+
+// GenericStore returns the generic store of this store.
+func (s *RegistrationStore) GenericStore() *kallax.Store {
+	return s.Store
+}
+
+// SetGenericStore changes the generic store of this store.
+func (s *RegistrationStore) SetGenericStore(store *kallax.Store) {
+	s.Store = store
+}
+
+// Debug returns a new store that will print all SQL statements to stdout using
+// the log.Printf function.
+func (s *RegistrationStore) Debug() *RegistrationStore {
+	return &RegistrationStore{s.Store.Debug()}
+}
+
+// DebugWith returns a new store that will print all SQL statements using the
+// given logger function.
+func (s *RegistrationStore) DebugWith(logger kallax.LoggerFunc) *RegistrationStore {
+	return &RegistrationStore{s.Store.DebugWith(logger)}
+}
+
+// DisableCacher turns off prepared statements, which can be useful in some scenarios.
+func (s *RegistrationStore) DisableCacher() *RegistrationStore {
+	return &RegistrationStore{s.Store.DisableCacher()}
+}
+
+// Insert inserts a Registration in the database. A non-persisted object is
+// required for this operation.
+func (s *RegistrationStore) Insert(record *Registration) error {
+	record.SetSaving(true)
+	defer record.SetSaving(false)
+
+	record.CreatedAt = record.CreatedAt.Truncate(time.Microsecond)
+	record.UpdatedAt = record.UpdatedAt.Truncate(time.Microsecond)
+
+	if err := record.BeforeSave(); err != nil {
+		return err
+	}
+
+	return s.Store.Insert(Schema.Registration.BaseSchema, record)
+}
+
+// Update updates the given record on the database. If the columns are given,
+// only these columns will be updated. Otherwise all of them will be.
+// Be very careful with this, as you will have a potentially different object
+// in memory but not on the database.
+// Only writable records can be updated. Writable objects are those that have
+// been just inserted or retrieved using a query with no custom select fields.
+func (s *RegistrationStore) Update(record *Registration, cols ...kallax.SchemaField) (updated int64, err error) {
+	record.CreatedAt = record.CreatedAt.Truncate(time.Microsecond)
+	record.UpdatedAt = record.UpdatedAt.Truncate(time.Microsecond)
+
+	record.SetSaving(true)
+	defer record.SetSaving(false)
+
+	if err := record.BeforeSave(); err != nil {
+		return 0, err
+	}
+
+	return s.Store.Update(Schema.Registration.BaseSchema, record, cols...)
+}
+
+// Save inserts the object if the record is not persisted, otherwise it updates
+// it. Same rules of Update and Insert apply depending on the case.
+func (s *RegistrationStore) Save(record *Registration) (updated bool, err error) {
+	if !record.IsPersisted() {
+		return false, s.Insert(record)
+	}
+
+	rowsUpdated, err := s.Update(record)
+	if err != nil {
+		return false, err
+	}
+
+	return rowsUpdated > 0, nil
+}
+
+// Delete removes the given record from the database.
+func (s *RegistrationStore) Delete(record *Registration) error {
+	return s.Store.Delete(Schema.Registration.BaseSchema, record)
+}
+
+// Find returns the set of results for the given query.
+func (s *RegistrationStore) Find(q *RegistrationQuery) (*RegistrationResultSet, error) {
+	rs, err := s.Store.Find(q)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewRegistrationResultSet(rs), nil
+}
+
+// MustFind returns the set of results for the given query, but panics if there
+// is any error.
+func (s *RegistrationStore) MustFind(q *RegistrationQuery) *RegistrationResultSet {
+	return NewRegistrationResultSet(s.Store.MustFind(q))
+}
+
+// Count returns the number of rows that would be retrieved with the given
+// query.
+func (s *RegistrationStore) Count(q *RegistrationQuery) (int64, error) {
+	return s.Store.Count(q)
+}
+
+// MustCount returns the number of rows that would be retrieved with the given
+// query, but panics if there is an error.
+func (s *RegistrationStore) MustCount(q *RegistrationQuery) int64 {
+	return s.Store.MustCount(q)
+}
+
+// FindOne returns the first row returned by the given query.
+// `ErrNotFound` is returned if there are no results.
+func (s *RegistrationStore) FindOne(q *RegistrationQuery) (*Registration, error) {
+	q.Limit(1)
+	q.Offset(0)
+	rs, err := s.Find(q)
+	if err != nil {
+		return nil, err
+	}
+
+	if !rs.Next() {
+		return nil, kallax.ErrNotFound
+	}
+
+	record, err := rs.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rs.Close(); err != nil {
+		return nil, err
+	}
+
+	return record, nil
+}
+
+// FindAll returns a list of all the rows returned by the given query.
+func (s *RegistrationStore) FindAll(q *RegistrationQuery) ([]*Registration, error) {
+	rs, err := s.Find(q)
+	if err != nil {
+		return nil, err
+	}
+
+	return rs.All()
+}
+
+// MustFindOne returns the first row retrieved by the given query. It panics
+// if there is an error or if there are no rows.
+func (s *RegistrationStore) MustFindOne(q *RegistrationQuery) *Registration {
+	record, err := s.FindOne(q)
+	if err != nil {
+		panic(err)
+	}
+	return record
+}
+
+// Reload refreshes the Registration with the data in the database and
+// makes it writable.
+func (s *RegistrationStore) Reload(record *Registration) error {
+	return s.Store.Reload(Schema.Registration.BaseSchema, record)
+}
+
+// Transaction executes the given callback in a transaction and rollbacks if
+// an error is returned.
+// The transaction is only open in the store passed as a parameter to the
+// callback.
+func (s *RegistrationStore) Transaction(callback func(*RegistrationStore) error) error {
+	if callback == nil {
+		return kallax.ErrInvalidTxCallback
+	}
+
+	return s.Store.Transaction(func(store *kallax.Store) error {
+		return callback(&RegistrationStore{store})
+	})
+}
+
+// RegistrationQuery is the object used to create queries for the Registration
+// entity.
+type RegistrationQuery struct {
+	*kallax.BaseQuery
+}
+
+// NewRegistrationQuery returns a new instance of RegistrationQuery.
+func NewRegistrationQuery() *RegistrationQuery {
+	return &RegistrationQuery{
+		BaseQuery: kallax.NewBaseQuery(Schema.Registration.BaseSchema),
+	}
+}
+
+// Select adds columns to select in the query.
+func (q *RegistrationQuery) Select(columns ...kallax.SchemaField) *RegistrationQuery {
+	if len(columns) == 0 {
+		return q
+	}
+	q.BaseQuery.Select(columns...)
+	return q
+}
+
+// SelectNot excludes columns from being selected in the query.
+func (q *RegistrationQuery) SelectNot(columns ...kallax.SchemaField) *RegistrationQuery {
+	q.BaseQuery.SelectNot(columns...)
+	return q
+}
+
+// Copy returns a new identical copy of the query. Remember queries are mutable
+// so make a copy any time you need to reuse them.
+func (q *RegistrationQuery) Copy() *RegistrationQuery {
+	return &RegistrationQuery{
+		BaseQuery: q.BaseQuery.Copy(),
+	}
+}
+
+// Order adds order clauses to the query for the given columns.
+func (q *RegistrationQuery) Order(cols ...kallax.ColumnOrder) *RegistrationQuery {
+	q.BaseQuery.Order(cols...)
+	return q
+}
+
+// BatchSize sets the number of items to fetch per batch when there are 1:N
+// relationships selected in the query.
+func (q *RegistrationQuery) BatchSize(size uint64) *RegistrationQuery {
+	q.BaseQuery.BatchSize(size)
+	return q
+}
+
+// Limit sets the max number of items to retrieve.
+func (q *RegistrationQuery) Limit(n uint64) *RegistrationQuery {
+	q.BaseQuery.Limit(n)
+	return q
+}
+
+// Offset sets the number of items to skip from the result set of items.
+func (q *RegistrationQuery) Offset(n uint64) *RegistrationQuery {
+	q.BaseQuery.Offset(n)
+	return q
+}
+
+// Where adds a condition to the query. All conditions added are concatenated
+// using a logical AND.
+func (q *RegistrationQuery) Where(cond kallax.Condition) *RegistrationQuery {
+	q.BaseQuery.Where(cond)
+	return q
+}
+
+// FindByID adds a new filter to the query that will require that
+// the ID property is equal to one of the passed values; if no passed values,
+// it will do nothing.
+func (q *RegistrationQuery) FindByID(v ...kallax.ULID) *RegistrationQuery {
+	if len(v) == 0 {
+		return q
+	}
+	values := make([]interface{}, len(v))
+	for i, val := range v {
+		values[i] = val
+	}
+	return q.Where(kallax.In(Schema.Registration.ID, values...))
+}
+
+// FindByCreatedAt adds a new filter to the query that will require that
+// the CreatedAt property is equal to the passed value.
+func (q *RegistrationQuery) FindByCreatedAt(cond kallax.ScalarCond, v time.Time) *RegistrationQuery {
+	return q.Where(cond(Schema.Registration.CreatedAt, v))
+}
+
+// FindByUpdatedAt adds a new filter to the query that will require that
+// the UpdatedAt property is equal to the passed value.
+func (q *RegistrationQuery) FindByUpdatedAt(cond kallax.ScalarCond, v time.Time) *RegistrationQuery {
+	return q.Where(cond(Schema.Registration.UpdatedAt, v))
+}
+
+// FindByUsername adds a new filter to the query that will require that
+// the Username property is equal to the passed value.
+func (q *RegistrationQuery) FindByUsername(v string) *RegistrationQuery {
+	return q.Where(kallax.Eq(Schema.Registration.Username, v))
+}
+
+// FindByEmail adds a new filter to the query that will require that
+// the Email property is equal to the passed value.
+func (q *RegistrationQuery) FindByEmail(v string) *RegistrationQuery {
+	return q.Where(kallax.Eq(Schema.Registration.Email, v))
+}
+
+// FindByPassword adds a new filter to the query that will require that
+// the Password property is equal to the passed value.
+func (q *RegistrationQuery) FindByPassword(v string) *RegistrationQuery {
+	return q.Where(kallax.Eq(Schema.Registration.Password, v))
+}
+
+// RegistrationResultSet is the set of results returned by a query to the
+// database.
+type RegistrationResultSet struct {
+	ResultSet kallax.ResultSet
+	last      *Registration
+	lastErr   error
+}
+
+// NewRegistrationResultSet creates a new result set for rows of the type
+// Registration.
+func NewRegistrationResultSet(rs kallax.ResultSet) *RegistrationResultSet {
+	return &RegistrationResultSet{ResultSet: rs}
+}
+
+// Next fetches the next item in the result set and returns true if there is
+// a next item.
+// The result set is closed automatically when there are no more items.
+func (rs *RegistrationResultSet) Next() bool {
+	if !rs.ResultSet.Next() {
+		rs.lastErr = rs.ResultSet.Close()
+		rs.last = nil
+		return false
+	}
+
+	var record kallax.Record
+	record, rs.lastErr = rs.ResultSet.Get(Schema.Registration.BaseSchema)
+	if rs.lastErr != nil {
+		rs.last = nil
+	} else {
+		var ok bool
+		rs.last, ok = record.(*Registration)
+		if !ok {
+			rs.lastErr = fmt.Errorf("kallax: unable to convert record to *Registration")
+			rs.last = nil
+		}
+	}
+
+	return true
+}
+
+// Get retrieves the last fetched item from the result set and the last error.
+func (rs *RegistrationResultSet) Get() (*Registration, error) {
+	return rs.last, rs.lastErr
+}
+
+// ForEach iterates over the complete result set passing every record found to
+// the given callback. It is possible to stop the iteration by returning
+// `kallax.ErrStop` in the callback.
+// Result set is always closed at the end.
+func (rs *RegistrationResultSet) ForEach(fn func(*Registration) error) error {
+	for rs.Next() {
+		record, err := rs.Get()
+		if err != nil {
+			return err
+		}
+
+		if err := fn(record); err != nil {
+			if err == kallax.ErrStop {
+				return rs.Close()
+			}
+
+			return err
+		}
+	}
+	return nil
+}
+
+// All returns all records on the result set and closes the result set.
+func (rs *RegistrationResultSet) All() ([]*Registration, error) {
+	var result []*Registration
+	for rs.Next() {
+		record, err := rs.Get()
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, record)
+	}
+	return result, nil
+}
+
+// One returns the first record on the result set and closes the result set.
+func (rs *RegistrationResultSet) One() (*Registration, error) {
+	if !rs.Next() {
+		return nil, kallax.ErrNotFound
+	}
+
+	record, err := rs.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rs.Close(); err != nil {
+		return nil, err
+	}
+
+	return record, nil
+}
+
+// Err returns the last error occurred.
+func (rs *RegistrationResultSet) Err() error {
+	return rs.lastErr
+}
+
+// Close closes the result set.
+func (rs *RegistrationResultSet) Close() error {
+	return rs.ResultSet.Close()
+}
 
 // NewUser returns a new instance of User.
 func NewUser() (record *User) {
@@ -456,7 +2060,40 @@ func (rs *UserResultSet) Close() error {
 }
 
 type schema struct {
-	User *schemaUser
+	Country             *schemaCountry
+	CountryTransaltions *schemaCountryTransaltions
+	Registration        *schemaRegistration
+	User                *schemaUser
+}
+
+type schemaCountry struct {
+	*kallax.BaseSchema
+	ID        kallax.SchemaField
+	CreatedAt kallax.SchemaField
+	UpdatedAt kallax.SchemaField
+	Code      kallax.SchemaField
+	A2        kallax.SchemaField
+	A3        kallax.SchemaField
+}
+
+type schemaCountryTransaltions struct {
+	*kallax.BaseSchema
+	ID        kallax.SchemaField
+	CreatedAt kallax.SchemaField
+	UpdatedAt kallax.SchemaField
+	Locale    kallax.SchemaField
+	Name      kallax.SchemaField
+	Fullname  kallax.SchemaField
+}
+
+type schemaRegistration struct {
+	*kallax.BaseSchema
+	ID        kallax.SchemaField
+	CreatedAt kallax.SchemaField
+	UpdatedAt kallax.SchemaField
+	Username  kallax.SchemaField
+	Email     kallax.SchemaField
+	Password  kallax.SchemaField
 }
 
 type schemaUser struct {
@@ -468,6 +2105,81 @@ type schemaUser struct {
 }
 
 var Schema = &schema{
+	Country: &schemaCountry{
+		BaseSchema: kallax.NewBaseSchema(
+			"countries",
+			"__country",
+			kallax.NewSchemaField("id"),
+			kallax.ForeignKeys{
+				"Translations": kallax.NewForeignKey("country_id", false),
+			},
+			func() kallax.Record {
+				return new(Country)
+			},
+			false,
+			kallax.NewSchemaField("id"),
+			kallax.NewSchemaField("created_at"),
+			kallax.NewSchemaField("updated_at"),
+			kallax.NewSchemaField("code"),
+			kallax.NewSchemaField("a2"),
+			kallax.NewSchemaField("a3"),
+		),
+		ID:        kallax.NewSchemaField("id"),
+		CreatedAt: kallax.NewSchemaField("created_at"),
+		UpdatedAt: kallax.NewSchemaField("updated_at"),
+		Code:      kallax.NewSchemaField("code"),
+		A2:        kallax.NewSchemaField("a2"),
+		A3:        kallax.NewSchemaField("a3"),
+	},
+	CountryTransaltions: &schemaCountryTransaltions{
+		BaseSchema: kallax.NewBaseSchema(
+			"countries_translations",
+			"__countrytransaltions",
+			kallax.NewSchemaField("id"),
+			kallax.ForeignKeys{},
+			func() kallax.Record {
+				return new(CountryTransaltions)
+			},
+			false,
+			kallax.NewSchemaField("id"),
+			kallax.NewSchemaField("created_at"),
+			kallax.NewSchemaField("updated_at"),
+			kallax.NewSchemaField("locale"),
+			kallax.NewSchemaField("name"),
+			kallax.NewSchemaField("fullname"),
+			kallax.NewSchemaField("country_id"),
+		),
+		ID:        kallax.NewSchemaField("id"),
+		CreatedAt: kallax.NewSchemaField("created_at"),
+		UpdatedAt: kallax.NewSchemaField("updated_at"),
+		Locale:    kallax.NewSchemaField("locale"),
+		Name:      kallax.NewSchemaField("name"),
+		Fullname:  kallax.NewSchemaField("fullname"),
+	},
+	Registration: &schemaRegistration{
+		BaseSchema: kallax.NewBaseSchema(
+			"registrations",
+			"__registration",
+			kallax.NewSchemaField("id"),
+			kallax.ForeignKeys{},
+			func() kallax.Record {
+				return new(Registration)
+			},
+			false,
+			kallax.NewSchemaField("id"),
+			kallax.NewSchemaField("created_at"),
+			kallax.NewSchemaField("updated_at"),
+			kallax.NewSchemaField("username"),
+			kallax.NewSchemaField("email"),
+			kallax.NewSchemaField("password"),
+		),
+		ID:        kallax.NewSchemaField("id"),
+		CreatedAt: kallax.NewSchemaField("created_at"),
+		UpdatedAt: kallax.NewSchemaField("updated_at"),
+		Username:  kallax.NewSchemaField("username"),
+		Email:     kallax.NewSchemaField("email"),
+		Password:  kallax.NewSchemaField("password"),
+	},
 	User: &schemaUser{
 		BaseSchema: kallax.NewBaseSchema(
 			"users",
