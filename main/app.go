@@ -10,6 +10,7 @@ import (
 	//"net/url"
 	//"time"
 	"github.com/apapacy/fitness-release-2/model"
+	dbn "github.com/apapacy/fitness-release-2/db"
 
 	"github.com/apapacy/fitness-release-2/routes"
 )
@@ -35,5 +36,6 @@ func main() {
 		uint64(id[3])<<16 | uint64(id[2])<<24 |
 		uint64(id[1])<<32 | uint64(id[0])<<40
 	fmt.Print(time)
+	dbn.ULID()
 	routes.GetRouter().Run() // listen and serve on 0.0.0.0:8080
 }

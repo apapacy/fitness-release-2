@@ -4,6 +4,8 @@ go get -u github.com/gin-gonic/gin/...
 
 go get -u gopkg.in/src-d/go-kallax.v1/...
 
+go get github.com/oklog/ulid
+
 kallax migrate --input ./model/ --out ./migrations --name init_db
 
 
@@ -12,4 +14,8 @@ kallax migrate up --dir ./my-migrations --dsn 'user:pass@localhost:5432/dbname?s
 
 go generate ./model/...
 
+
+export GOCACHE=off go test
 go test -v model/*
+
+
