@@ -2,9 +2,10 @@ package db
 
 import (
 	"database/sql"
-	_ "github.com/lib/pq"
 	"fmt"
 	"reflect"
+
+	_ "github.com/lib/pq"
 	//"net/url"
 	//"time"
 	"github.com/oklog/ulid"
@@ -15,35 +16,38 @@ import (
 
 type Country struct {
 	Id           ulid.ULID
-	Code         int    `unique:"true"`
-	A2           string `unique:"true"`
-	A3           string `unique:"true"`
+	Code         sql.NullInt64  `unique:"true"`
+	A2           sql.NullString `unique:"true"`
+	A3           sql.NullString `unique:"true"`
 	Translations []CountryTransaltions
 	CountryTransaltions
 }
 
 type CountryTransaltions struct {
-	Locale   string
-	Name     string
-	Fullname string
+	Locale   sql.NullString
+	Name     sql.NullString
+	Fullname sql.NullString
 }
-
 
 func Save(db *sql.DB, record interface{}) int {
 	table := reflect.TypeOf(record).String()
 	fmt.Println("***>>>" + table)
 	fmt.Println(record)
 
-	v := reflect.ValueOf(record)
+	v := reflect.Indirect(reflect.ValueOf(record))
 
-    values := make([]interface{}, v.NumField())
+	for i := 0; i < v.Type().NumField(); i++ {
+		fmt.Println("-------------")
+		fmt.Println(v.Type().Field(i).Name)
+		fmt.Println(v.Type().Field(i).Anonymous)
+		fmt.Println(v.Field(i))
+		if v.Field(i).Type() == reflect.TypeOf((*sql.NullInt64)(nil)).Elem() {
+			fmt.Println(v.Field(i).FieldByName("Value"))
+		}
 
-    for i := 0; i < v.NumField(); i++ {
-        values[i] = v.Field(i).Interface()
-		fmt.Println(values[i])
 	}
 
-	return 1;
+	return 1
 }
 
 func (this Country) Save(db *sql.DB) {
@@ -53,9 +57,12 @@ func (this Country) Save(db *sql.DB) {
 func init() {
 	country := Country{
 		Id: ULID(),
+		// Code: sql.NullInt64{123, true},
 		CountryTransaltions: CountryTransaltions{
-			Locale: "ua",
+			Locale: sql.NullString{"ua", true},
 		},
 	}
 	country.Save(GetDB())
+	fmt.Println("111111111111111111111111")
+	fmt.Println(country.Code.Value())
 }
