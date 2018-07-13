@@ -24,13 +24,12 @@ func GetDB() *sql.DB {
 	return db
 }
 
-func ULID() {
+func ULID() ulid.ULID {
 	t := time.Now()
 	fmt.Println(t)
 	entropy := rand.New(rand.NewSource(t.UnixNano()))
-	fmt.Println(ulid.MustNew(ulid.Timestamp(t), entropy))
+	newUlid := ulid.MustNew(ulid.Timestamp(t), entropy)
+	fmt.Println(newUlid)
+	return newUlid
 }
 
-func init() {
-	ULID()
-}
