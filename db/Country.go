@@ -23,13 +23,13 @@ type Countries struct {
 	Code         sql.NullInt64  `unique:"true"`
 	A2           sql.NullString `unique:"true"`
 	A3           sql.NullString `unique:"true"`
-	Translations []CountryTransaltions
-	CountryTransaltions
+	Translations []CountryTranslations
+	CountryTranslations
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-type CountryTransaltions struct {
+type CountryTranslations struct {
 	Locale   sql.NullString
 	Name     sql.NullString
 	Fullname sql.NullString
@@ -69,6 +69,21 @@ func underscore(s string) string {
 	return name
 }
 
+func plainFields(v reflect.Value) []string {
+	fields := []string{}
+	for i := 0; i < v.Type().NumField(); i++ {
+		if v.Type().Field(i).Name == "Translations" {
+			continue
+		}
+		if v.Type().Field(i).Anonymous {
+			fields = append(fields, plainFields(v.FieldByName(v.Type().Field(i).Name))...)
+		} else {
+			fields = append(fields, v.Type().Field(i).Name)
+		}
+	}
+	return fields
+}
+
 func Save(db *sql.DB, record interface{}) int {
 	table := underscore(reflect.TypeOf(record).String())
 	sql := "insert into \"" + table + "\" ("
@@ -77,7 +92,8 @@ func Save(db *sql.DB, record interface{}) int {
 	values := []interface{}{}
 
 	v := reflect.Indirect(reflect.ValueOf(record))
-
+	fmt.Println("3333333333333333333333333333")
+	fmt.Println(plainFields(v))
 	for i := 0; i < v.Type().NumField(); i++ {
 		fmt.Println(v.Type().Field(i).Type.String())
 		if v.Type().Field(i).Name == "Translations" || v.Type().Field(i).Anonymous {
@@ -120,7 +136,7 @@ func init() {
 		Code: sql.NullInt64{123, true},
 		A2:   sql.NullString{"12", true},
 		A3:   sql.NullString{"123", true},
-		CountryTransaltions: CountryTransaltions{
+		CountryTranslations: CountryTranslations{
 			Locale: sql.NullString{"ua", true},
 		},
 		CreatedAt: time.Now(),
