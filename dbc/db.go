@@ -32,7 +32,6 @@ func GetDB() *sql.DB {
 }
 
 func ULID(t time.Time) ulid.ULID {
-	fmt.Println(t)
 	entropy := rand.New(rand.NewSource(t.UnixNano()))
 	newUlid := ulid.MustNew(ulid.Timestamp(t), entropy)
 	return newUlid
@@ -134,7 +133,7 @@ func Insert(db *sql.DB, record interface{}) int {
 	}
 	sql += ") values (" + places + ")"
 	result, err := db.Exec(sql, values...)
-	fmt.Println(result.RowsAffected())
+	fmt.Println(result)
 	fmt.Println(err)
 	return 1
 }
