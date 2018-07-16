@@ -1,7 +1,7 @@
 package dbc
 
 import (
-	//"fmt"
+	"fmt"
 	"testing"
 	"database/sql"
 
@@ -24,7 +24,9 @@ func TestCountryInsert(t *testing.T) {
 			Locale: sql.NullString{"ua", true},
 		},
 	}
-
+	res, err := GetDB().Exec("delete from countries")
+	fmt.Println(res)
+	fmt.Println(err)
 	country.Insert(GetDB())
 }
 

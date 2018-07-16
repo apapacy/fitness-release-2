@@ -2,17 +2,19 @@ package dbc
 
 import (
 	"database/sql"
-	_ "github.com/lib/pq"
-	"github.com/oklog/ulid"
 	"fmt"
 	"math/rand"
+
+	// _ "github.com/lib/pq"
+	"github.com/oklog/ulid"
+
 	//"net/url"
-	"time"
 	"encoding/hex"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
-	"regexp"
+	"time"
 )
 
 var db *sql.DB
@@ -68,21 +70,32 @@ func underscore(s string) string {
 	return name
 }
 
-func plainFields(v reflect.Value) []string {
-	fields := []string{}
+type structFields struct {
+	name  string
+	ftype reflect.Type
+	tag   reflect.StructTag
+	value reflect.Value
+}
+
+func plainFields(v reflect.Value) []structFields {
+	fields := []structFields{}
 	for i := 0; i < v.Type().NumField(); i++ {
-		if v.Type().Field(i).Name == "Translations" {
-			continue
+		field := structFields{
+			name:  v.Type().Field(i).Name,
+			ftype: v.Type().Field(i).Type,
+			tag:   v.Type().Field(i).Tag,
+			value: v.FieldByName(v.Type().Field(i).Name),
 		}
 		if v.Type().Field(i).Anonymous {
 			fields = append(fields, plainFields(v.FieldByName(v.Type().Field(i).Name))...)
 		} else {
-			fields = append(fields, v.Type().Field(i).Name)
+			fields = append(fields, field)
 		}
 	}
 	return fields
 }
 
+// Insert insert new recorde in database
 func Insert(db *sql.DB, record interface{}) int {
 	now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
@@ -91,32 +104,27 @@ func Insert(db *sql.DB, record interface{}) int {
 	p := 1
 	values := []interface{}{}
 	v := reflect.Indirect(reflect.ValueOf(record))
-	t := reflect.TypeOf(record)
-	var field reflect.StructField
-	var value reflect.Value
 	fields := plainFields(v)
-	for _, name := range fields {
-		if name == "Translations" || name == "Locale" {
+	for _, field := range fields {
+		if field.name == "Translations" || field.name == "Locale" {
 			continue
 		}
-		field, _ = t.FieldByName(name)
-		tag := field.Tag.Get("dbc")
-		fmt.Println(tag)
+		tag := field.tag.Get("dbc")
 		match, _ := regexp.MatchString("translation", tag)
-		if (match) {
+		if match {
 			continue
 		}
-		value = v.FieldByName(name)
+		value := field.value
 		if sql[len(sql)-1] != '(' {
 			sql += ","
 			places += ","
 		}
-		sql += "\"" + underscore(name) + "\""
+		sql += "\"" + underscore(field.name) + "\""
 		places += "$" + strconv.Itoa(p)
 		p++
-		if name == "CreatedAt" || name == "UpdatedAt" {
+		if field.name == "CreatedAt" || field.name == "UpdatedAt" {
 			values = append(values, now)
-		} else if field.Type.String() == "ulid.ULID" {
+		} else if field.ftype.String() == "ulid.ULID" {
 			ulid, _ := ULID(now).MarshalBinary()
 			uuid := UUID(ulid)
 			values = append(values, uuid)
@@ -130,4 +138,3 @@ func Insert(db *sql.DB, record interface{}) int {
 	fmt.Println(err)
 	return 1
 }
-
