@@ -25,6 +25,6 @@ func TestCountryInsert(t *testing.T) {
 		},
 	}
 
-	country.Save(GetDB())
+	country.Insert(GetDB())
 }
 

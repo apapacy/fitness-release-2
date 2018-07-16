@@ -32,8 +32,8 @@ type CountryTranslations struct {
 }
 
 
-func (this Countries) Save(db *sql.DB) {
-	dbc.Save(db, this)
+func (this Countries) Insert(db *sql.DB) {
+	dbc.Insert(db, this)
 }
 
 

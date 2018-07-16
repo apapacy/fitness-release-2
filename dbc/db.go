@@ -83,7 +83,7 @@ func plainFields(v reflect.Value) []string {
 	return fields
 }
 
-func Save(db *sql.DB, record interface{}) int {
+func Insert(db *sql.DB, record interface{}) int {
 	now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
 	sql := "insert into \"" + table + "\" ("
@@ -126,7 +126,7 @@ func Save(db *sql.DB, record interface{}) int {
 	}
 	sql += ") values (" + places + ")"
 	result, err := db.Exec(sql, values...)
-	fmt.Println(result)
+	fmt.Println(result.RowsAffected())
 	fmt.Println(err)
 	return 1
 }
