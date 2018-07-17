@@ -7,6 +7,7 @@ import (
 
 	// _ "github.com/lib/pq"
 	"github.com/oklog/ulid"
+	"github.com/satori/go.uuid"
 
 	//"net/url"
 	"encoding/hex"
@@ -123,10 +124,9 @@ func Insert(db *sql.DB, record interface{}) int {
 		p++
 		if field.name == "CreatedAt" || field.name == "UpdatedAt" {
 			values = append(values, now)
-		} else if field.ftype.String() == "ulid.ULID" {
-			ulid, _ := ULID(now).MarshalBinary()
-			uuid := UUID(ulid)
-			values = append(values, uuid)
+		} else if field.ftype.String() == "uuid.UUID" {
+			uid, _ := uuid.NewV1()
+			values = append(values, uid)
 		} else {
 			values = append(values, value.Interface())
 		}

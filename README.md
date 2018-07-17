@@ -14,7 +14,9 @@ kallax migrate up --dir ./my-migrations --dsn 'user:pass@localhost:5432/dbname?s
 
 go generate ./model/...
 
-
+export GOROOT=$HOME/go
+export GOPATH=$HOME/projects/go
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 export GOCACHE=off go test
 go test -v model/*
 
