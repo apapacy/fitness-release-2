@@ -75,6 +75,7 @@ type structFields struct {
 	ftype reflect.Type
 	tag   reflect.StructTag
 	value reflect.Value
+	field reflect.StructField
 }
 
 func plainFields(v reflect.Value) []structFields {
@@ -85,6 +86,7 @@ func plainFields(v reflect.Value) []structFields {
 			ftype: v.Type().Field(i).Type,
 			tag:   v.Type().Field(i).Tag,
 			value: v.FieldByName(v.Type().Field(i).Name),
+			field: v.Type().Field(i),
 		}
 		if v.Type().Field(i).Anonymous {
 			fields = append(fields, plainFields(v.FieldByName(v.Type().Field(i).Name))...)
@@ -114,7 +116,6 @@ func Insert(db *sql.DB, record interface{}) int {
 		if match {
 			continue
 		}
-		value := field.value
 		if sql[len(sql)-1] != '(' {
 			sql += ","
 			places += ","
@@ -128,12 +129,58 @@ func Insert(db *sql.DB, record interface{}) int {
 			uid, _ := uuid.NewV1()
 			values = append(values, uid)
 		} else {
-			values = append(values, value.Interface())
+			values = append(values, field.value.Interface())
 		}
 	}
 	sql += ") values (" + places + ")"
 	result, err := db.Exec(sql, values...)
 	fmt.Println(result)
 	fmt.Println(err)
+	return 1
+}
+
+func Select(db *sql.DB, record interface{}) int {
+	// now := time.Now()
+	table := underscore(reflect.TypeOf(record).String())
+	sql := "select "
+	places := ""
+	p := 1
+	values := []interface{}{}
+	v := reflect.Indirect(reflect.ValueOf(record))
+	fields := plainFields(v)
+	fmt.Println(fields)
+	for _, field := range fields {
+		if field.name == "Translations" || field.name == "Locale" {
+			continue
+		}
+		tag := field.tag.Get("dbc")
+		match, _ := regexp.MatchString("translation", tag)
+		if match {
+			continue
+		}
+		if sql[len(sql)-1] != ' ' {
+			sql += ","
+			places += ","
+		}
+		sql += "\"" + underscore(field.name) + "\""
+		places += "$" + strconv.Itoa(p)
+		p++
+		values = append(values, field.value.Addr().Interface())
+	}
+
+	sql += " from " + table
+	fmt.Println("00000000000000000000")
+	fmt.Println(values)
+	row, err := db.Query(sql)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		for row.Next() {
+			row.Scan(values...)
+			fmt.Println("11111111111111")
+			fmt.Println(record)
+			fmt.Println("222222222222")
+		}
+	}
 	return 1
 }
