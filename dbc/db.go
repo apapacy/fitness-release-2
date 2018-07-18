@@ -133,8 +133,8 @@ func Insert(db *sql.DB, record interface{}) int {
 		}
 	}
 	sql += ") values (" + places + ")"
-	result, err := db.Exec(sql, values...)
-	fmt.Println(result)
+	_, err := db.Exec(sql, values...)
+	fmt.Println(values)
 	fmt.Println(err)
 	return 1
 }
@@ -147,6 +147,7 @@ func Select(db *sql.DB, record interface{}) int {
 	p := 1
 	values := []interface{}{}
 	v := reflect.Indirect(reflect.ValueOf(record))
+	pv := v.Elem()
 	fields := plainFields(v)
 	fmt.Println(fields)
 	for _, field := range fields {
@@ -165,7 +166,9 @@ func Select(db *sql.DB, record interface{}) int {
 		sql += "\"" + underscore(field.name) + "\""
 		places += "$" + strconv.Itoa(p)
 		p++
-		values = append(values, field.value.Addr().Interface())
+		fmt.Println(field.name)
+		fmt.Println(pv.FieldByName(field.name))
+		values = append(values, pv.FieldByName(field.name).UnsafeAddr())
 	}
 
 	sql += " from " + table

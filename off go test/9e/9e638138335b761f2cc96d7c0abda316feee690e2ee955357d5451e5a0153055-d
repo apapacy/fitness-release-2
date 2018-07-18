@@ -1,0 +1,26 @@
+=== RUN   TestCountryInsert
+{0xc420126000 1}
+<nil>
+[335eca2e-8a28-11e8-8ce0-c03fd50b7941 {234 true} {23 true} { false} 2018-07-18 04:16:29.997411032 +0300 EEST m=+0.030950735 2018-07-18 04:16:29.997411032 +0300 EEST m=+0.030950735]
+<nil>
+[{Id 0x673e00 dbc:"pk" {0x673e00 0xc4201300e0 145} {Id  0x673e00 dbc:"pk" 0 [0] false}} {Code 0x667440  {0x667440 0xc4201300f0 153} {Code  0x667440  16 [1] false}} {A2 0x6674e0  {0x6674e0 0xc420130100 153} {A2  0x6674e0  32 [2] false}} {A3 0x6674e0  {0x6674e0 0xc420130118 153} {A3  0x6674e0  56 [3] false}} {CreatedAt 0x690b80 dbc:"required" {0x690b80 0xc420130130 153} {CreatedAt  0x690b80 dbc:"required" 0 [0] false}} {UpdatedAt 0x690b80 dbc:"required" {0x690b80 0xc420130148 153} {UpdatedAt  0x690b80 dbc:"required" 24 [1] false}} {Translations 0x637920  {0x637920 0xc420130160 151} {Translations  0x637920  128 [5] false}} {Locale 0x6674e0 dbc:"locale" {0x6674e0 0xc420130178 153} {Locale  0x6674e0 dbc:"locale" 0 [0] false}} {Name 0x6674e0 dbc:"translation" {0x6674e0 0xc420130190 153} {Name  0x6674e0 dbc:"translation" 24 [1] false}} {Fullname 0x6674e0 dbc:"translation" {0x6674e0 0xc4201301a8 153} {Fullname  0x6674e0 dbc:"translation" 48 [2] false}}]
+Id
+0xc42011e1a0
+Code
+0xc42011e1f0
+A2
+0xc42011e230
+A3
+0xc42011e270
+CreatedAt
+0xc42011e2b0
+UpdatedAt
+0xc42011e2f0
+00000000000000000000
+[0xc42011e1a0 0xc42011e1f0 0xc42011e230 0xc42011e270 0xc42011e2b0 0xc42011e2f0]
+11111111111111
+{00000000-0000-0000-0000-000000000000 {0 false} { false} { false} {0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC} [] {{ false} { false} { false}}}
+222222222222
+--- PASS: TestCountryInsert (0.04s)
+PASS
+ok  	command-line-arguments	0.047s

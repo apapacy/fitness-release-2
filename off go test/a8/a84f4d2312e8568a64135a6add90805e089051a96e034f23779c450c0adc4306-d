@@ -1,0 +1,10 @@
+# test log
+getenv GODEBUG
+getenv RES_OPTIONS
+getenv HOSTALIASES
+open /etc/nsswitch.conf
+open /etc/resolv.conf
+open /proc/sys/kernel/hostname
+stat /etc/mdns.allow
+stat /etc/hosts
+open /etc/hosts

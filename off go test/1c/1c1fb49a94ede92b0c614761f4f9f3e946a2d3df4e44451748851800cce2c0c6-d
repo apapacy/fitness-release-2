@@ -1,0 +1,8 @@
+=== RUN   TestCountryInsert
+{0xc4200ce300 1}
+<nil>
+[f1dafcb8-8a1f-11e8-9048-c03fd50b7941 {234 true} {23 true} { false} 2018-07-18 03:17:24.10791662 +0300 EEST m=+0.041063815 2018-07-18 03:17:24.10791662 +0300 EEST m=+0.041063815]
+<nil>
+--- PASS: TestCountryInsert (0.05s)
+PASS
+ok  	command-line-arguments	0.055s
