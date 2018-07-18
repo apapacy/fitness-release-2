@@ -147,7 +147,6 @@ func Select(db *sql.DB, record interface{}) int {
 	p := 1
 	values := []interface{}{}
 	v := reflect.Indirect(reflect.ValueOf(record))
-	pv := v.Elem()
 	fields := plainFields(v)
 	fmt.Println(fields)
 	for _, field := range fields {
@@ -167,8 +166,8 @@ func Select(db *sql.DB, record interface{}) int {
 		places += "$" + strconv.Itoa(p)
 		p++
 		fmt.Println(field.name)
-		fmt.Println(pv.FieldByName(field.name))
-		values = append(values, pv.FieldByName(field.name).UnsafeAddr())
+		fmt.Println(&(field.value))
+		values = append(values, &field.value)
 	}
 
 	sql += " from " + table
