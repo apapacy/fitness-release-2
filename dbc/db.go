@@ -75,20 +75,22 @@ type structFields struct {
 	ftype reflect.Type
 	tag   reflect.StructTag
 	value reflect.Value
+	addr  interface{}
 }
 
-func plainFields(v reflect.Value) []structFields {
+func plainFields(v *reflect.Value) []structFields {
 	fields := []structFields{}
 	for i := 0; i < v.Type().NumField(); i++ {
-		field := structFields{
-			name:  v.Type().Field(i).Name,
-			ftype: v.Type().Field(i).Type,
-			tag:   v.Type().Field(i).Tag,
-			value: v.FieldByName(v.Type().Field(i).Name),
-		}
+		vp := v.FieldByName(v.Type().Field(i).Name)
 		if v.Type().Field(i).Anonymous {
-			fields = append(fields, plainFields(v.FieldByName(v.Type().Field(i).Name))...)
+			fields = append(fields, plainFields(&vp)...)
 		} else {
+			field := structFields{
+				name:  v.Type().Field(i).Name,
+				ftype: v.Type().Field(i).Type,
+				tag:   v.Type().Field(i).Tag,
+				value: v.FieldByName(v.Type().Field(i).Name),
+			}
 			fields = append(fields, field)
 		}
 	}
@@ -104,7 +106,7 @@ func Insert(db *sql.DB, record interface{}) int {
 	p := 1
 	values := []interface{}{}
 	v := reflect.Indirect(reflect.ValueOf(record))
-	fields := plainFields(v)
+	fields := plainFields(&v)
 	for _, field := range fields {
 		if field.name == "Translations" || field.name == "Locale" {
 			continue
@@ -143,7 +145,7 @@ func Select(db *sql.DB, record interface{}) int {
 	sql := "select "
 	values := []interface{}{}
 	v := reflect.ValueOf(record).Elem()
-	fields := plainFields(v)
+	fields := plainFields(&v)
 	for _, field := range fields {
 		if field.name == "Translations" || field.name == "Locale" {
 			continue
