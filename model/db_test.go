@@ -29,6 +29,6 @@ func TestCountryInsert(t *testing.T) {
 	fmt.Println(res)
 	fmt.Println(err)
 	country.Insert(dbc.GetDB())
-	s := Countries{}
-	dbc.Select(dbc.GetDB(), s)
+	// s := Countries{}
+	dbc.Select(dbc.GetDB(), &Countries{})
 }

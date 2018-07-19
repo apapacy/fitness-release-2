@@ -75,7 +75,6 @@ type structFields struct {
 	ftype reflect.Type
 	tag   reflect.StructTag
 	value reflect.Value
-	field reflect.StructField
 }
 
 func plainFields(v reflect.Value) []structFields {
@@ -86,7 +85,6 @@ func plainFields(v reflect.Value) []structFields {
 			ftype: v.Type().Field(i).Type,
 			tag:   v.Type().Field(i).Tag,
 			value: v.FieldByName(v.Type().Field(i).Name),
-			field: v.Type().Field(i),
 		}
 		if v.Type().Field(i).Anonymous {
 			fields = append(fields, plainFields(v.FieldByName(v.Type().Field(i).Name))...)
@@ -143,12 +141,9 @@ func Select(db *sql.DB, record interface{}) int {
 	// now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
 	sql := "select "
-	places := ""
-	p := 1
 	values := []interface{}{}
-	v := reflect.Indirect(reflect.ValueOf(record))
+	v := reflect.ValueOf(record).Elem()
 	fields := plainFields(v)
-	fmt.Println(fields)
 	for _, field := range fields {
 		if field.name == "Translations" || field.name == "Locale" {
 			continue
@@ -160,19 +155,12 @@ func Select(db *sql.DB, record interface{}) int {
 		}
 		if sql[len(sql)-1] != ' ' {
 			sql += ","
-			places += ","
 		}
 		sql += "\"" + underscore(field.name) + "\""
-		places += "$" + strconv.Itoa(p)
-		p++
-		fmt.Println(field.name)
-		fmt.Println(&(field.value))
-		values = append(values, &field.value)
+		values = append(values, v.FieldByName(field.name).Addr().Interface())
 	}
 
 	sql += " from " + table
-	fmt.Println("00000000000000000000")
-	fmt.Println(values)
 	row, err := db.Query(sql)
 	if err != nil {
 		fmt.Println(err)
