@@ -145,27 +145,32 @@ func Insert(db *sql.DB, record interface{}) int {
 func Select(db *sql.DB, record interface{}) int {
 	// now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
+	translations_table := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
+	from := table
 	sql := "select "
 	values := []interface{}{}
 	v := reflect.ValueOf(record).Elem()
 	fields := plainFields(&v)
 	for _, field := range fields {
 		if field.name == "Translations" || field.name == "Locale" {
-			continue
-		}
-		tag := field.tag.Get("dbc")
-		match, _ := regexp.MatchString("translation", tag)
-		if match {
+			from = table + translations_table
 			continue
 		}
 		if sql[len(sql)-1] != ' ' {
 			sql += ","
 		}
-		sql += "\"" + underscore(field.name) + "\""
+		tag := field.tag.Get("dbc")
+		match, _ := regexp.MatchString("translation", tag)
+		if match {
+			sql += "\"" + table + "_translations\".\"" + underscore(field.name) + "\""
+		} else {
+			sql += "\"" + table + "\".\"" + underscore(field.name) + "\""
+		}
 		values = append(values, v.FieldByName(field.name).Addr().Interface())
 	}
 
-	sql += " from " + table
+	sql += " from " + from
+	fmt.Println(sql)
 	row, err := db.Query(sql)
 	if err != nil {
 		fmt.Println(err)

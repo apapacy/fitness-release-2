@@ -25,11 +25,11 @@ func TestCountryInsert(t *testing.T) {
 			Locale: sql.NullString{"ua", true},
 		},
 	}
-	res, err := dbc.GetDB().Exec("delete from countries")
-	fmt.Println(res)
-	fmt.Println(err)
-	dbc.Insert(dbc.GetDB(), &country)
-	fmt.Println("=========================================")
+	// res, err := dbc.GetDB().Exec("delete from countries")
+	// fmt.Println(res)
+	// fmt.Println(err)
+	// dbc.Insert(dbc.GetDB(), &country)
+	// fmt.Println("=========================================")
 	fmt.Println(country)
 	dbc.Select(dbc.GetDB(), &Countries{})
 }
