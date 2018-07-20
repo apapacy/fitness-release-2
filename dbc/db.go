@@ -101,15 +101,12 @@ func plainFields(v *reflect.Value) []structFields {
 // Insert insert new recorde in database
 func Insert(db *sql.DB, record interface{}) int {
 	now := time.Now()
+	table := underscore(reflect.TypeOf(record).String())
 	v := reflect.ValueOf(record).Elem()
-	table := underscore(reflect.TypeOf(v.Interface()).String())
-	fmt.Println(reflect.TypeOf(record))
 	sql := "insert into \"" + table + "\" ("
 	places := ""
 	p := 1
 	values := []interface{}{}
-	// v := reflect.ValueOf(record).Elem()
-	fmt.Println(v)
 	fields := plainFields(&v)
 	for _, field := range fields {
 		if field.name == "Translations" || field.name == "Locale" {
@@ -128,6 +125,7 @@ func Insert(db *sql.DB, record interface{}) int {
 		places += "$" + strconv.Itoa(p)
 		p++
 		if field.name == "CreatedAt" || field.name == "UpdatedAt" {
+			v.FieldByName(field.name).Set(reflect.ValueOf(now))
 			values = append(values, now)
 		} else if field.ftype.String() == "uuid.UUID" {
 			uid, _ := uuid.NewV1()
