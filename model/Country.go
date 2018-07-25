@@ -17,7 +17,7 @@ import (
 )
 
 type Countries struct {
-	Id   uuid.UUID `dbc:"pk"`
+	Id   uuid.UUID `dbc:"pk,auto"`
 	Code sql.NullInt64
 	A2   sql.NullString
 	A3   sql.NullString
@@ -30,10 +30,6 @@ type CountryTranslations struct {
 	Locale   sql.NullString `dbc:"locale"`
 	Name     sql.NullString `dbc:"translation"`
 	Fullname sql.NullString `dbc:"translation"`
-}
-
-func (this Countries) Insert(db *sql.DB) {
-	dbc.Insert(db, this)
 }
 
 // https://gist.github.com/drewolson/4771479

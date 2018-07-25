@@ -90,6 +90,7 @@ func plainFields(v *reflect.Value) []structFields {
 				ftype: v.Type().Field(i).Type,
 				tag:   v.Type().Field(i).Tag,
 				value: v.FieldByName(v.Type().Field(i).Name),
+				addr:  &vp,
 			}
 			fields = append(fields, field)
 		}
@@ -101,11 +102,11 @@ func plainFields(v *reflect.Value) []structFields {
 func Insert(db *sql.DB, record interface{}) int {
 	now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
+	v := reflect.ValueOf(record).Elem()
 	sql := "insert into \"" + table + "\" ("
 	places := ""
 	p := 1
 	values := []interface{}{}
-	v := reflect.Indirect(reflect.ValueOf(record))
 	fields := plainFields(&v)
 	for _, field := range fields {
 		if field.name == "Translations" || field.name == "Locale" {
@@ -124,9 +125,11 @@ func Insert(db *sql.DB, record interface{}) int {
 		places += "$" + strconv.Itoa(p)
 		p++
 		if field.name == "CreatedAt" || field.name == "UpdatedAt" {
+			v.FieldByName(field.name).Set(reflect.ValueOf(now))
 			values = append(values, now)
 		} else if field.ftype.String() == "uuid.UUID" {
 			uid, _ := uuid.NewV1()
+			v.FieldByName(field.name).Set(reflect.ValueOf(uid))
 			values = append(values, uid)
 		} else {
 			values = append(values, field.value.Interface())
@@ -142,27 +145,32 @@ func Insert(db *sql.DB, record interface{}) int {
 func Select(db *sql.DB, record interface{}) int {
 	// now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
+	translations_table := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
+	from := table
 	sql := "select "
 	values := []interface{}{}
 	v := reflect.ValueOf(record).Elem()
 	fields := plainFields(&v)
 	for _, field := range fields {
 		if field.name == "Translations" || field.name == "Locale" {
-			continue
-		}
-		tag := field.tag.Get("dbc")
-		match, _ := regexp.MatchString("translation", tag)
-		if match {
+			from = table + translations_table
 			continue
 		}
 		if sql[len(sql)-1] != ' ' {
 			sql += ","
 		}
-		sql += "\"" + underscore(field.name) + "\""
+		tag := field.tag.Get("dbc")
+		match, _ := regexp.MatchString("translation", tag)
+		if match {
+			sql += "\"" + table + "_translations\".\"" + underscore(field.name) + "\""
+		} else {
+			sql += "\"" + table + "\".\"" + underscore(field.name) + "\""
+		}
 		values = append(values, v.FieldByName(field.name).Addr().Interface())
 	}
 
-	sql += " from " + table
+	sql += " from " + from
+	fmt.Println(sql)
 	row, err := db.Query(sql)
 	if err != nil {
 		fmt.Println(err)

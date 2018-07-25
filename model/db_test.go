@@ -18,17 +18,18 @@ import (
 
 func TestCountryInsert(t *testing.T) {
 	country := Countries{
-		Code: sql.NullInt64{234, true},
-		A2:   sql.NullString{"23", true},
-		A3:   sql.NullString{"", false},
+		Code: sql.NullInt64{1, true},
+		A2:   sql.NullString{"2", true},
+		A3:   sql.NullString{"4", true},
 		CountryTranslations: CountryTranslations{
 			Locale: sql.NullString{"ua", true},
 		},
 	}
-	res, err := dbc.GetDB().Exec("delete from countries")
-	fmt.Println(res)
-	fmt.Println(err)
-	country.Insert(dbc.GetDB())
-	// s := Countries{}
+	// res, err := dbc.GetDB().Exec("delete from countries")
+	// fmt.Println(res)
+	// fmt.Println(err)
+	// dbc.Insert(dbc.GetDB(), &country)
+	// fmt.Println("=========================================")
+	fmt.Println(country)
 	dbc.Select(dbc.GetDB(), &Countries{})
 }
