@@ -21,3 +21,10 @@ export GOCACHE=off go test
 go test -v model/*
 
 
+go get -u github.com/golang/dep/cmd/dep
+go get -u -d github.com/golang-migrate/migrate/cli
+cd $GOPATH/src/github.com/golang-migrate/migrate/cli
+dep ensure
+go build -tags 'postgres' -o $GOPATH/bin/migrate github.com/golang-migrate/migrate/cli
+
+ migrate -database postgres://postgres:password@localhost:5433/test?sslmode=disable  -path migrations drop
