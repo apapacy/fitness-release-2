@@ -2,11 +2,9 @@ package model
 
 import (
 	"github.com/oklog/ulid"
-
 	//"fmt"
 	//"net/url"
 	//"time"
-
 	//"gopkg.in/src-d/go-kallax.v1"
 	//"gopkg.in/src-d/go-kallax.v1/tests/fixtures"
 	//"gopkg.in/src-d/go-kallax.v1/types"
@@ -14,7 +12,7 @@ import (
 
 type City struct {
 	ID           ulid.ULID
-	Country      Countries
+	Country      Country
 	Translations []CityTransaltions
 	Locale       string
 	Name         string

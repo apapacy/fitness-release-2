@@ -16,7 +16,7 @@ import (
 	//"gopkg.in/src-d/go-kallax.v1/types"
 )
 
-type Countries struct {
+type Country struct {
 	Id   uuid.UUID `dbc:"pk,auto"`
 	Code sql.NullInt64
 	A2   sql.NullString

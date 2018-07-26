@@ -1,61 +1,73 @@
 BEGIN;
 
-CREATE TABLE countries (
-	id uuid NOT NULL PRIMARY KEY,
-	created_at timestamptz NOT NULL,
-	updated_at timestamptz NOT NULL,
+CREATE TABLE country (
+	id uuid PRIMARY KEY,
 	code bigint NOT NULL UNIQUE,
 	a2 text NOT NULL UNIQUE,
-	a3 text NOT NULL UNIQUE
+	a3 text NOT NULL UNIQUE,
+	created_at timestamptz NOT NULL,
+	updated_at timestamptz NOT NULL
 );
 
-
-CREATE TABLE cities (
-	id uuid NOT NULL PRIMARY KEY,
-	created_at timestamptz NOT NULL,
-	updated_at timestamptz NOT NULL,
-	country_id uuid NOT NULL REFERENCES countries(id)
-);
-
-
-CREATE TABLE cities_translations (
-	id uuid NOT NULL PRIMARY KEY,
-	created_at timestamptz NOT NULL,
-	updated_at timestamptz NOT NULL,
-	locale text NOT NULL,
+CREATE TABLE country_translations (
+	id uuid REFERENCES country ON DELETE CASCADE,
+	locale text,
 	name text NOT NULL,
 	fullname text NOT NULL,
-	city_id uuid NOT NULL REFERENCES cities(id)
-);
-
-
-CREATE TABLE countries_translations (
-	id uuid NOT NULL PRIMARY KEY,
 	created_at timestamptz NOT NULL,
 	updated_at timestamptz NOT NULL,
-	locale text NOT NULL,
+	PRIMARY KEY (id, locale)
+);
+
+CREATE TABLE city (
+	id uuid PRIMARY KEY,
+	country_id uuid NOT NULL REFERENCES country ON DELETE RESTRICT,
+	created_at timestamptz NOT NULL,
+	updated_at timestamptz NOT NULL
+);
+
+CREATE TABLE city_translations (
+	id uuid REFERENCES city ON DELETE CASCADE,
+	locale text,
 	name text NOT NULL,
 	fullname text NOT NULL,
-	country_id uuid NOT NULL REFERENCES countries(id)
-);
-
-
-CREATE TABLE registrations (
-	id uuid NOT NULL PRIMARY KEY,
 	created_at timestamptz NOT NULL,
 	updated_at timestamptz NOT NULL,
-	username text NOT NULL,
-	email text NOT NULL,
-	password text NOT NULL
+	PRIMARY KEY (id, locale)
 );
 
-
-CREATE TABLE users (
-	id uuid NOT NULL PRIMARY KEY,
-	username text NOT NULL,
-	email text NOT NULL,
-	password text NOT NULL
+CREATE TABLE firma (
+	id uuid PRIMARY KEY,
+	created_at timestamptz NOT NULL,
+	updated_at timestamptz NOT NULL
 );
 
+CREATE TABLE firma_translations (
+	id uuid REFERENCES firma ON DELETE CASCADE,
+	locale text,
+	name text NOT NULL,
+	fullname text NOT NULL,
+	created_at timestamptz NOT NULL,
+	updated_at timestamptz NOT NULL,
+	PRIMARY KEY (id, locale)
+);
+
+CREATE TABLE club (
+	id uuid PRIMARY KEY,
+	firma_id uuid NOT NULL REFERENCES firma ON DELETE RESTRICT,
+	created_at timestamptz NOT NULL,
+	updated_at timestamptz NOT NULL
+);
+
+CREATE TABLE club_translations (
+	id uuid REFERENCES firma(id) ON DELETE CASCADE,
+	locale text,
+	name text NOT NULL,
+	fullname text NOT NULL,
+	address text NOT NULL,
+	created_at timestamptz NOT NULL,
+	updated_at timestamptz NOT NULL,
+	PRIMARY KEY (id, locale)
+);
 
 COMMIT;

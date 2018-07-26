@@ -128,9 +128,15 @@ func Insert(db *sql.DB, record interface{}) int {
 			v.FieldByName(field.name).Set(reflect.ValueOf(now))
 			values = append(values, now)
 		} else if field.ftype.String() == "uuid.UUID" {
-			uid, _ := uuid.NewV1()
-			v.FieldByName(field.name).Set(reflect.ValueOf(uid))
-			values = append(values, uid)
+			match, _ := regexp.MatchString("(^|,)auto(,|$)", tag)
+			if match {
+				fmt.Println("-----------------------------------")
+				uid, _ := uuid.NewV1()
+				v.FieldByName(field.name).Set(reflect.ValueOf(uid))
+				values = append(values, uid)
+			} else {
+				values = append(values, field.value.Interface())
+			}
 		} else {
 			values = append(values, field.value.Interface())
 		}
@@ -160,7 +166,7 @@ func Select(db *sql.DB, record interface{}) int {
 			sql += ","
 		}
 		tag := field.tag.Get("dbc")
-		match, _ := regexp.MatchString("translation", tag)
+		match, _ := regexp.MatchString("(^|,)translation(,|$)", tag)
 		if match {
 			sql += "\"" + table + "_translations\".\"" + underscore(field.name) + "\""
 		} else {
