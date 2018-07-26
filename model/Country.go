@@ -34,11 +34,13 @@ type CountryTranslations struct {
 }
 
 func CountrySelectAll(db *sql.DB) []*Country {
-	rows := dbc.Select(dbc.GetDB(), &Country{})
+	rows := dbc.Select(dbc.GetDB(), Country{})
 	returns := []*Country{}
 	for _, row := range rows {
 		fmt.Println(row)
-		returns = append(returns, row.(*Country))
+		ref := row.(*Country)
+		fmt.Println(ref)
+		returns = append(returns, ref)
 	}
 	return returns
 }

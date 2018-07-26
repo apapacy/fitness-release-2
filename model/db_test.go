@@ -17,7 +17,15 @@ import (
 )
 
 func TestCountryInsert(t *testing.T) {
-	country := Country{
+	country1 := Country{
+		Code: sql.NullInt64{1, true},
+		A2:   sql.NullString{"2", true},
+		A3:   sql.NullString{"3", true},
+		CountryTranslations: CountryTranslations{
+			Locale: sql.NullString{"ua", true},
+		},
+	}
+	country2 := Country{
 		Code: sql.NullInt64{2, true},
 		A2:   sql.NullString{"3", true},
 		A3:   sql.NullString{"4", true},
@@ -25,10 +33,11 @@ func TestCountryInsert(t *testing.T) {
 			Locale: sql.NullString{"ua", true},
 		},
 	}
-	//res, err := dbc.GetDB().Exec("delete from country;delete from city;")
-	//fmt.Println(res)
-	//fmt.Println(err)
-	dbc.Insert(dbc.GetDB(), &country)
+	res, err := dbc.GetDB().Exec("delete from country;delete from city;")
+	fmt.Println(res)
+	fmt.Println(err)
+	dbc.Insert(dbc.GetDB(), &country1)
+	dbc.Insert(dbc.GetDB(), &country2)
 	//fmt.Println("=========================================")
 	//fmt.Println(country)
 	//city := City{

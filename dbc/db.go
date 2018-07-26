@@ -103,6 +103,7 @@ func plainFields(v *reflect.Value) []structFields {
 func Insert(db *sql.DB, record interface{}) int {
 	now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
+	isTranslations, _ := regexp.MatchString("_translations$", table)
 	v := reflect.ValueOf(record).Elem()
 	sql := "insert into \"" + table + "\" ("
 	places := ""
@@ -114,9 +115,11 @@ func Insert(db *sql.DB, record interface{}) int {
 			continue
 		}
 		tag := field.tag.Get("dbc")
-		match, _ := regexp.MatchString("(^|,)translation(,|$)", tag)
-		if match {
-			continue
+		if !isTranslations {
+			match, _ := regexp.MatchString("(^|,)translation(,|$)", tag)
+			if match {
+				continue
+			}
 		}
 		if sql[len(sql)-1] != '(' {
 			sql += ","
@@ -165,13 +168,16 @@ func Insert(db *sql.DB, record interface{}) int {
 func Select(db *sql.DB, record interface{}) []interface{} {
 	// now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
+	r := reflect.New(reflect.TypeOf(record)).Elem()
+	fmt.Println("qqqqqqqqqqqqqqqqqqqq")
+	fmt.Println(r)
 	translations_table := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
 	from := table
 	sql := "select "
 	values := []interface{}{}
 	returns := []interface{}{}
-	v := reflect.ValueOf(record).Elem()
-	fields := plainFields(&v)
+	//v := reflect.ValueOf(r)
+	fields := plainFields(&r)
 	for _, field := range fields {
 		if field.name == "Translations" || field.name == "Locale" {
 			from = table + translations_table
@@ -187,7 +193,9 @@ func Select(db *sql.DB, record interface{}) []interface{} {
 		} else {
 			sql += "\"" + table + "\".\"" + underscore(field.name) + "\""
 		}
-		values = append(values, v.FieldByName(field.name).Addr().Interface())
+		fmt.Println("eeeeeeeeeeeeeeeeeeeeeeee")
+		fmt.Println(r.FieldByName(field.name).Addr())
+		values = append(values, r.FieldByName(field.name).Addr().Interface())
 	}
 
 	sql += " from " + from
@@ -198,9 +206,9 @@ func Select(db *sql.DB, record interface{}) []interface{} {
 	} else {
 		for row.Next() {
 			row.Scan(values...)
-			returns = append(returns, record)
+			returns = append(returns, r)
 			fmt.Println("11111111111111")
-			fmt.Println(record)
+			fmt.Println(r)
 			fmt.Println("222222222222")
 		}
 	}
