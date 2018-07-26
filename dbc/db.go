@@ -82,7 +82,8 @@ func plainFields(v *reflect.Value) []structFields {
 	fields := []structFields{}
 	for i := 0; i < v.Type().NumField(); i++ {
 		vp := v.FieldByName(v.Type().Field(i).Name)
-		if v.Type().Field(i).Anonymous {
+		match, _ := regexp.MatchString("(^|,)re1f(,|$)", v.Type().Field(i).Tag.Get("dbc"))
+		if v.Type().Field(i).Anonymous || match {
 			fields = append(fields, plainFields(&vp)...)
 		} else {
 			field := structFields{
@@ -113,7 +114,7 @@ func Insert(db *sql.DB, record interface{}) int {
 			continue
 		}
 		tag := field.tag.Get("dbc")
-		match, _ := regexp.MatchString("translation", tag)
+		match, _ := regexp.MatchString("(^|,)translation(,|$)", tag)
 		if match {
 			continue
 		}
@@ -121,7 +122,14 @@ func Insert(db *sql.DB, record interface{}) int {
 			sql += ","
 			places += ","
 		}
-		sql += "\"" + underscore(field.name) + "\""
+		fmt.Println("//////////// " + tag)
+		ref, _ := regexp.MatchString("(^|,)ref(,|$)", tag)
+		fmt.Println(ref)
+		if ref {
+			sql += "\"" + underscore(field.name) + "_id\""
+		} else {
+			sql += "\"" + underscore(field.name) + "\""
+		}
 		places += "$" + strconv.Itoa(p)
 		p++
 		if field.name == "CreatedAt" || field.name == "UpdatedAt" {
@@ -130,21 +138,27 @@ func Insert(db *sql.DB, record interface{}) int {
 		} else if field.ftype.String() == "uuid.UUID" {
 			match, _ := regexp.MatchString("(^|,)auto(,|$)", tag)
 			if match {
-				fmt.Println("-----------------------------------")
 				uid, _ := uuid.NewV1()
+				fmt.Println(field.name)
 				v.FieldByName(field.name).Set(reflect.ValueOf(uid))
-				values = append(values, uid)
+			}
+			values = append(values, field.value.Interface())
+		} else {
+			if ref {
+				values = append(values, v.FieldByName(field.name).FieldByName("Id").Interface())
+				fmt.Println("7777777777777777777777777777777777777")
+				fmt.Println(v.FieldByName(field.name).FieldByName("Id").Interface())
 			} else {
 				values = append(values, field.value.Interface())
 			}
-		} else {
-			values = append(values, field.value.Interface())
 		}
 	}
 	sql += ") values (" + places + ")"
 	_, err := db.Exec(sql, values...)
-	fmt.Println(values)
+	fmt.Println("+++++++++++++++++++++++++++++++++++++")
 	fmt.Println(err)
+	fmt.Println(sql)
+	fmt.Println(values)
 	return 1
 }
 

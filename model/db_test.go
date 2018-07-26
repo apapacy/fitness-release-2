@@ -31,5 +31,11 @@ func TestCountryInsert(t *testing.T) {
 	dbc.Insert(dbc.GetDB(), &country)
 	fmt.Println("=========================================")
 	fmt.Println(country)
+	city := City{
+		Country: country,
+	}
+	fmt.Println("=========================================")
+	dbc.Insert(dbc.GetDB(), &city)
+	fmt.Println(city)
 	dbc.Select(dbc.GetDB(), &Country{})
 }

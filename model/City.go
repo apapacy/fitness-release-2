@@ -1,7 +1,8 @@
 package model
 
 import (
-	"github.com/oklog/ulid"
+	"github.com/apapacy/fitness-release-2/dbc"
+	"github.com/satori/go.uuid"
 	//"fmt"
 	//"net/url"
 	//"time"
@@ -11,16 +12,15 @@ import (
 )
 
 type City struct {
-	ID           ulid.ULID
-	Country      Country
+	Id      uuid.UUID `dbc:"pk,auto"`
+	Country Country   `dbc:"ref"`
+	dbc.Timestamp
 	Translations []CityTransaltions
-	Locale       string
-	Name         string
-	Fullname     string
+	CityTransaltions
 }
 
 type CityTransaltions struct {
-	Locale   string
-	Name     string
-	Fullname string
+	Locale   string `dbc:"locale"`
+	Name     string `dbc:"translation"`
+	Fullname string `dbc:"translation"`
 }
