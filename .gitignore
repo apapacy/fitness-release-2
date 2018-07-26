@@ -1,3 +1,4 @@
+/app
 /docker/nginx/sock
 /docker/postgres/**/*
 /docker/nginx/log
