@@ -33,12 +33,12 @@ type CountryTranslations struct {
 	dbc.Timestamp
 }
 
-func CountrySelectAll(db *sql.DB) []*Country {
+func CountrySelectAll(db *sql.DB) []Country {
 	rows := dbc.Select(dbc.GetDB(), Country{})
-	returns := []*Country{}
+	returns := []Country{}
 	for _, row := range rows {
 		fmt.Println(row)
-		ref := row.(*Country)
+		ref := row.(Country)
 		fmt.Println(ref)
 		returns = append(returns, ref)
 	}

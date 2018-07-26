@@ -206,7 +206,7 @@ func Select(db *sql.DB, record interface{}) []interface{} {
 	} else {
 		for row.Next() {
 			row.Scan(values...)
-			returns = append(returns, r)
+			returns = append(returns, r.Interface())
 			fmt.Println("11111111111111")
 			fmt.Println(r)
 			fmt.Println("222222222222")
