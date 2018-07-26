@@ -208,6 +208,10 @@ func Select(db *sql.DB, record interface{}) []interface{} {
 		fmt.Println(err)
 	} else {
 		for row.Next() {
+			for _, ref := range values {
+				r := reflect.ValueOf(ref).Elem()
+				r.Set(reflect.Zero(r.Type()))
+			}
 			row.Scan(values...)
 			returns = append(returns, r.Interface())
 			fmt.Println("11111111111111")
