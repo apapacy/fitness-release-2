@@ -38,6 +38,13 @@ func TestCountryInsert(t *testing.T) {
 	fmt.Println(err)
 	dbc.Insert(dbc.GetDB(), &country1)
 	dbc.Insert(dbc.GetDB(), &country2)
+	country1Translarions := CountryTranslations{
+		Fullname: sql.NullString{"wewe", true},
+		Name:     sql.NullString{"wewe", true},
+		Locale:   sql.NullString{"ua", true},
+		Id:       country1.Id,
+	}
+	dbc.Insert(dbc.GetDB(), &country1Translarions)
 	//fmt.Println("=========================================")
 	//fmt.Println(country)
 	//city := City{

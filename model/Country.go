@@ -27,6 +27,7 @@ type Country struct {
 }
 
 type CountryTranslations struct {
+	Id       uuid.UUID      `dbc:"translation"`
 	Locale   sql.NullString `dbc:"locale"`
 	Name     sql.NullString `dbc:"translation"`
 	Fullname sql.NullString `dbc:"translation"`

@@ -111,11 +111,14 @@ func Insert(db *sql.DB, record interface{}) int {
 	values := []interface{}{}
 	fields := plainFields(&v)
 	for _, field := range fields {
-		if field.name == "Translations" || field.name == "Locale" {
+		if field.name == "Translations" {
 			continue
 		}
 		tag := field.tag.Get("dbc")
 		if !isTranslations {
+			if field.name == "Locale" {
+				continue
+			}
 			match, _ := regexp.MatchString("(^|,)translation(,|$)", tag)
 			if match {
 				continue
