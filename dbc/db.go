@@ -162,13 +162,14 @@ func Insert(db *sql.DB, record interface{}) int {
 	return 1
 }
 
-func Select(db *sql.DB, record interface{}) int {
+func Select(db *sql.DB, record interface{}) []interface{} {
 	// now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
 	translations_table := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
 	from := table
 	sql := "select "
 	values := []interface{}{}
+	returns := []interface{}{}
 	v := reflect.ValueOf(record).Elem()
 	fields := plainFields(&v)
 	for _, field := range fields {
@@ -197,10 +198,11 @@ func Select(db *sql.DB, record interface{}) int {
 	} else {
 		for row.Next() {
 			row.Scan(values...)
+			returns = append(returns, record)
 			fmt.Println("11111111111111")
 			fmt.Println(record)
 			fmt.Println("222222222222")
 		}
 	}
-	return 1
+	return returns
 }

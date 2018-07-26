@@ -12,9 +12,8 @@ import (
 )
 
 type City struct {
-	Id      uuid.UUID `dbc:"pk,auto"`
-	Country Country   `dbc:"ref"`
-	dbc.Timestamp
+	Id           uuid.UUID `dbc:"pk,auto"`
+	Country      Country   `dbc:"ref"`
 	Translations []CityTransaltions
 	CityTransaltions
 }
@@ -23,4 +22,5 @@ type CityTransaltions struct {
 	Locale   string `dbc:"locale"`
 	Name     string `dbc:"translation"`
 	Fullname string `dbc:"translation"`
+	dbc.Timestamp
 }

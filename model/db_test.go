@@ -18,24 +18,26 @@ import (
 
 func TestCountryInsert(t *testing.T) {
 	country := Country{
-		Code: sql.NullInt64{1, true},
-		A2:   sql.NullString{"2", true},
+		Code: sql.NullInt64{2, true},
+		A2:   sql.NullString{"3", true},
 		A3:   sql.NullString{"4", true},
 		CountryTranslations: CountryTranslations{
 			Locale: sql.NullString{"ua", true},
 		},
 	}
-	res, err := dbc.GetDB().Exec("delete from country")
-	fmt.Println(res)
-	fmt.Println(err)
+	//res, err := dbc.GetDB().Exec("delete from country;delete from city;")
+	//fmt.Println(res)
+	//fmt.Println(err)
 	dbc.Insert(dbc.GetDB(), &country)
-	fmt.Println("=========================================")
-	fmt.Println(country)
-	city := City{
-		Country: country,
-	}
-	fmt.Println("=========================================")
-	dbc.Insert(dbc.GetDB(), &city)
-	fmt.Println(city)
-	dbc.Select(dbc.GetDB(), &Country{})
+	//fmt.Println("=========================================")
+	//fmt.Println(country)
+	//city := City{
+	//	Country: country,
+	//}
+	//fmt.Println("=========================================")
+	//dbc.Insert(dbc.GetDB(), &city)
+	//fmt.Println(city)
+	rows := CountrySelectAll(dbc.GetDB())
+	fmt.Println("444444444444444444444444444444444444")
+	fmt.Println(rows)
 }
