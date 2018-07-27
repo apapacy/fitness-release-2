@@ -3,20 +3,15 @@ package dbc
 import (
 	"database/sql"
 	"fmt"
-	"math/rand"
 
-	// _ "github.com/lib/pq"
-
-	"github.com/oklog/ulid"
-	"github.com/satori/go.uuid"
-
-	//"net/url"
 	"encoding/hex"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/satori/go.uuid"
 )
 
 var db *sql.DB
@@ -31,12 +26,6 @@ func GetDB() *sql.DB {
 		panic(err)
 	}
 	return db
-}
-
-func ULID(t time.Time) ulid.ULID {
-	entropy := rand.New(rand.NewSource(t.UnixNano()))
-	newUlid := ulid.MustNew(ulid.Timestamp(t), entropy)
-	return newUlid
 }
 
 func UUID(u []byte) string {
@@ -101,7 +90,7 @@ func plainFields(v *reflect.Value) []structFields {
 }
 
 // Insert insert new recorde in database
-func Insert(db *sql.DB, record interface{}) int {
+func Insert(db *sql.DB, record interface{}) (sql.Result, error) {
 	now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
 	isTranslations, _ := regexp.MatchString("_translations$", table)
@@ -129,9 +118,7 @@ func Insert(db *sql.DB, record interface{}) int {
 			sql += ","
 			places += ","
 		}
-		fmt.Println("//////////// " + tag)
 		ref, _ := regexp.MatchString("(^|,)ref(,|$)", tag)
-		fmt.Println(ref)
 		if ref {
 			sql += "\"" + underscore(field.name) + "_id\""
 		} else {
@@ -153,39 +140,28 @@ func Insert(db *sql.DB, record interface{}) int {
 		} else {
 			if ref {
 				values = append(values, v.FieldByName(field.name).FieldByName("Id").Interface())
-				fmt.Println("7777777777777777777777777777777777777")
-				fmt.Println(v.FieldByName(field.name).FieldByName("Id").Interface())
 			} else {
 				values = append(values, field.value.Interface())
 			}
 		}
 	}
 	sql += ") values (" + places + ")"
-	_, err := db.Exec(sql, values...)
-	fmt.Println("+++++++++++++++++++++++++++++++++++++")
-	fmt.Println(err)
+	result, err := db.Exec(sql, values...)
 	fmt.Println(sql)
-	fmt.Println(values)
-	return 1
+	return result, err
 }
 
-func Select(db *sql.DB, records interface{}) {
-	// now := time.Now()
-	item := reflect.TypeOf(records).Elem().Elem()
+func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
+	element := reflect.TypeOf(records).Elem().Elem()
 	returnsPtr := reflect.ValueOf(records)
 	returns := returnsPtr.Elem()
-
-	//returns := reflect.New(reflect.ArrayOf(0, item)).Elem()
-	table := underscore(item.String())
-	r := reflect.New(item).Elem()
-	fmt.Println("qqqqqqqqqqqqqqqqqqqq")
-	fmt.Println(r)
+	table := underscore(element.String())
+	newElement := reflect.New(element).Elem()
 	translations_table := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
 	from := table
 	sql := "select "
 	values := []interface{}{}
-	//v := reflect.ValueOf(r)
-	fields := plainFields(&r)
+	fields := plainFields(&newElement)
 	for _, field := range fields {
 		if field.name == "Translations" {
 			from = table + translations_table
@@ -201,30 +177,22 @@ func Select(db *sql.DB, records interface{}) {
 		} else {
 			sql += "\"" + table + "\".\"" + underscore(field.name) + "\""
 		}
-		fmt.Println("eeeeeeeeeeeeeeeeeeeeeeee")
-		fmt.Println(r.FieldByName(field.name).Addr())
-		values = append(values, r.FieldByName(field.name).Addr().Interface())
+		values = append(values, newElement.FieldByName(field.name).Addr().Interface())
 	}
-
 	sql += " from " + from
 	fmt.Println(sql)
-	row, err := db.Query(sql)
+	rows, err := db.Query(sql)
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		for row.Next() {
-			for _, ref := range values {
-				r := reflect.ValueOf(ref).Elem()
-				r.Set(reflect.Zero(r.Type()))
+		for rows.Next() {
+			for _, row := range values {
+				ref := reflect.ValueOf(row).Elem()
+				ref.Set(reflect.Zero(ref.Type()))
 			}
-			row.Scan(values...)
-			fmt.Println(r)
-			fmt.Println("11111111111111")
-			returns.Set(reflect.Append(returns, r))
-
-			//returns = append(returns, r)
-			fmt.Println(returns)
-			fmt.Println("222222222222")
+			rows.Scan(values...)
+			returns.Set(reflect.Append(returns, newElement))
 		}
 	}
+	return rows, err
 }
