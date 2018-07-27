@@ -172,7 +172,10 @@ func Insert(db *sql.DB, record interface{}) int {
 func Select(db *sql.DB, records interface{}) {
 	// now := time.Now()
 	item := reflect.TypeOf(records).Elem().Elem()
-	fmt.Println(item)
+	returnsPtr := reflect.ValueOf(records)
+	returns := returnsPtr.Elem()
+
+	//returns := reflect.New(reflect.ArrayOf(0, item)).Elem()
 	table := underscore(item.String())
 	r := reflect.New(item).Elem()
 	fmt.Println("qqqqqqqqqqqqqqqqqqqq")
@@ -215,9 +218,12 @@ func Select(db *sql.DB, records interface{}) {
 				r.Set(reflect.Zero(r.Type()))
 			}
 			row.Scan(values...)
-			reflect.Append(reflect.ValueOf(records).Elem(), r)
-			fmt.Println("11111111111111")
 			fmt.Println(r)
+			fmt.Println("11111111111111")
+			returns.Set(reflect.Append(returns, r))
+
+			//returns = append(returns, r)
+			fmt.Println(returns)
 			fmt.Println("222222222222")
 		}
 	}
