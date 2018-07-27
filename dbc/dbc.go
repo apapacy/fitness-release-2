@@ -152,19 +152,18 @@ func Insert(db *sql.DB, record interface{}) (sql.Result, error) {
 }
 
 func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
+	returns := reflect.ValueOf(records).Elem()
 	element := reflect.TypeOf(records).Elem().Elem()
-	returnsPtr := reflect.ValueOf(records)
-	returns := returnsPtr.Elem()
 	table := underscore(element.String())
 	newElement := reflect.New(element).Elem()
-	translations_table := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
+	translationsTable := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
 	from := table
 	sql := "select "
 	values := []interface{}{}
 	fields := plainFields(&newElement)
 	for _, field := range fields {
 		if field.name == "Translations" {
-			from = table + translations_table
+			from = table + translationsTable
 			continue
 		}
 		if sql[len(sql)-1] != ' ' {
