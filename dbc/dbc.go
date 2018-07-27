@@ -68,10 +68,11 @@ type structFields struct {
 	addr  interface{}
 }
 
-func plainFields(v *reflect.Value) []structFields {
+func plainFields(vp *reflect.Value) []structFields {
 	fields := []structFields{}
+	v := vp.Elem()
 	for i := 0; i < v.Type().NumField(); i++ {
-		vp := v.FieldByName(v.Type().Field(i).Name)
+		vp := v.FieldByName(v.Type().Field(i).Name).Addr()
 		match, _ := regexp.MatchString("(^|,)re1f(,|$)", v.Type().Field(i).Tag.Get("dbc"))
 		if v.Type().Field(i).Anonymous || match {
 			fields = append(fields, plainFields(&vp)...)
@@ -81,7 +82,7 @@ func plainFields(v *reflect.Value) []structFields {
 				ftype: v.Type().Field(i).Type,
 				tag:   v.Type().Field(i).Tag,
 				value: v.FieldByName(v.Type().Field(i).Name),
-				addr:  &vp,
+				addr:  &v,
 			}
 			fields = append(fields, field)
 		}
@@ -94,12 +95,13 @@ func Insert(db *sql.DB, record interface{}) (sql.Result, error) {
 	now := time.Now()
 	table := underscore(reflect.TypeOf(record).String())
 	isTranslations, _ := regexp.MatchString("_translations$", table)
-	v := reflect.ValueOf(record).Elem()
+	vp := reflect.ValueOf(record)
+	v := vp.Elem()
 	sql := "insert into \"" + table + "\" ("
 	places := ""
 	p := 1
 	values := []interface{}{}
-	fields := plainFields(&v)
+	fields := plainFields(&vp)
 	for _, field := range fields {
 		if field.name == "Translations" {
 			continue
@@ -133,7 +135,6 @@ func Insert(db *sql.DB, record interface{}) (sql.Result, error) {
 			match, _ := regexp.MatchString("(^|,)auto(,|$)", tag)
 			if match {
 				uid, _ := uuid.NewV1()
-				fmt.Println(field.name)
 				v.FieldByName(field.name).Set(reflect.ValueOf(uid))
 			}
 			values = append(values, field.value.Interface())
@@ -155,12 +156,13 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 	returns := reflect.ValueOf(records).Elem()
 	element := reflect.TypeOf(records).Elem().Elem()
 	table := underscore(element.String())
-	newElement := reflect.New(element).Elem()
+	newElementPtr := reflect.New(element)
+	newElement := newElementPtr.Elem()
 	translationsTable := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
 	from := table
 	sql := "select "
 	values := []interface{}{}
-	fields := plainFields(&newElement)
+	fields := plainFields(&newElementPtr)
 	for _, field := range fields {
 		if field.name == "Translations" {
 			from = table + translationsTable
