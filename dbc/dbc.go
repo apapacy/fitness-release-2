@@ -82,7 +82,7 @@ func plainFields(vp *reflect.Value) []structFields {
 				ftype: v.Type().Field(i).Type,
 				tag:   v.Type().Field(i).Tag,
 				value: v.FieldByName(v.Type().Field(i).Name),
-				addr:  &v,
+				addr:  v.FieldByName(v.Type().Field(i).Name).Addr().Interface(),
 			}
 			fields = append(fields, field)
 		}
@@ -178,7 +178,8 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 		} else {
 			sql += "\"" + table + "\".\"" + underscore(field.name) + "\""
 		}
-		values = append(values, newElement.FieldByName(field.name).Addr().Interface())
+		// values = append(values, newElement.FieldByName(field.name).Addr().Interface())
+		values = append(values, field.addr)
 	}
 	sql += " from " + from
 	fmt.Println(sql)
