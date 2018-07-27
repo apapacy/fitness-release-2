@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 	//"time"
-	"fmt"
 
 	_ "github.com/lib/pq"
 	//"net/url"
@@ -28,22 +27,10 @@ type Country struct {
 
 type CountryTranslations struct {
 	Id       uuid.UUID      `dbc:"translation"`
-	Locale   sql.NullString `dbc:"locale"`
+	Locale   sql.NullString `dbc:"locale,translation"`
 	Name     sql.NullString `dbc:"translation"`
 	Fullname sql.NullString `dbc:"translation"`
 	dbc.Timestamp
-}
-
-func CountrySelectAll(db *sql.DB) []Country {
-	rows := dbc.Select(dbc.GetDB(), Country{})
-	returns := []Country{}
-	for _, row := range rows {
-		fmt.Println(row)
-		ref := row.(Country)
-		fmt.Println(ref)
-		returns = append(returns, ref)
-	}
-	return returns
 }
 
 // https://gist.github.com/drewolson/4771479

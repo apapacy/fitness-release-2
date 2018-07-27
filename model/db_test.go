@@ -33,7 +33,7 @@ func TestCountryInsert(t *testing.T) {
 			Locale: sql.NullString{"ua", true},
 		},
 	}
-	res, err := dbc.GetDB().Exec("delete from country;delete from city;")
+	res, err := dbc.GetDB().Exec("delete from city_translations;delete from city;delete from country_translations;delete from country;")
 	fmt.Println(res)
 	fmt.Println(err)
 	dbc.Insert(dbc.GetDB(), &country1)
@@ -53,7 +53,8 @@ func TestCountryInsert(t *testing.T) {
 	//fmt.Println("=========================================")
 	//dbc.Insert(dbc.GetDB(), &city)
 	//fmt.Println(city)
-	rows := CountrySelectAll(dbc.GetDB())
+	countries := []Country{}
+	dbc.Select(dbc.GetDB(), &countries)
 	fmt.Println("444444444444444444444444444444444444")
-	fmt.Println(rows)
+	fmt.Println(countries)
 }

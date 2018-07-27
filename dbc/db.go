@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	// _ "github.com/lib/pq"
+
 	"github.com/oklog/ulid"
 	"github.com/satori/go.uuid"
 
@@ -168,17 +169,18 @@ func Insert(db *sql.DB, record interface{}) int {
 	return 1
 }
 
-func Select(db *sql.DB, record interface{}) []interface{} {
+func Select(db *sql.DB, records interface{}) {
 	// now := time.Now()
-	table := underscore(reflect.TypeOf(record).String())
-	r := reflect.New(reflect.TypeOf(record)).Elem()
+	item := reflect.TypeOf(records).Elem().Elem()
+	fmt.Println(item)
+	table := underscore(item.String())
+	r := reflect.New(item).Elem()
 	fmt.Println("qqqqqqqqqqqqqqqqqqqq")
 	fmt.Println(r)
 	translations_table := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
 	from := table
 	sql := "select "
 	values := []interface{}{}
-	returns := []interface{}{}
 	//v := reflect.ValueOf(r)
 	fields := plainFields(&r)
 	for _, field := range fields {
@@ -213,11 +215,10 @@ func Select(db *sql.DB, record interface{}) []interface{} {
 				r.Set(reflect.Zero(r.Type()))
 			}
 			row.Scan(values...)
-			returns = append(returns, r.Interface())
+			reflect.Append(reflect.ValueOf(records).Elem(), r)
 			fmt.Println("11111111111111")
 			fmt.Println(r)
 			fmt.Println("222222222222")
 		}
 	}
-	return returns
 }
