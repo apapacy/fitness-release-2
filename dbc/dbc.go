@@ -187,7 +187,7 @@ func Select(db *sql.DB, records interface{}) {
 	//v := reflect.ValueOf(r)
 	fields := plainFields(&r)
 	for _, field := range fields {
-		if field.name == "Translations" || field.name == "Locale" {
+		if field.name == "Translations" {
 			from = table + translations_table
 			continue
 		}
