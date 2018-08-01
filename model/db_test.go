@@ -61,7 +61,10 @@ func TestCountryInsert(t *testing.T) {
 		panic(err)
 	}
 	countries := []Country{}
-	dbc.Select(dbc.GetDB(), &countries)
+	_, err = dbc.Select(dbc.GetDB(), &countries)
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println("444444444444444444444444444444444444")
 	fmt.Println(countries)
 }

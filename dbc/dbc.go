@@ -159,33 +159,14 @@ func Insert(db *sql.DB, record interface{}) (sql.Result, error) {
 func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 	returns := reflect.ValueOf(records).Elem()
 	element := reflect.TypeOf(records).Elem().Elem()
-	table := underscore(element.String())
 	newElementPtr := reflect.New(element)
 	newElement := newElementPtr.Elem()
-	translationsTable := " left join \"" + table + "_translations\" on \"" + table + "\".\"id\"=\"" + table + "_translations\".\"id\""
-	from := table
-	sql := "select "
+	fields := []structFields{}
 	values := []interface{}{}
-	fields := plainFields(&newElementPtr)
-	for _, field := range fields {
-		if field.name == "Translations" {
-			from = table + translationsTable
-			continue
-		}
-		if sql[len(sql)-1] != ' ' {
-			sql += ","
-		}
-		tag := field.tag.Get("dbc")
-		match, _ := regexp.MatchString("(^|,)translation(,|$)", tag)
-		if match {
-			sql += "\"" + table + "_translations\".\"" + underscore(field.name) + "\""
-		} else {
-			sql += "\"" + table + "\".\"" + underscore(field.name) + "\""
-		}
-		// values = append(values, newElement.FieldByName(field.name).Addr().Interface())
-		values = append(values, field.addr)
-	}
-	sql += " from " + from
+	tables := ""
+	sqlFields := ""
+	prepareSelect(records, "", &tables, &sqlFields, &fields, &values, 0)
+	sql := "select " + sqlFields + " from " + tables
 	fmt.Println(sql)
 	rows, err := db.Query(sql)
 	if err != nil {
@@ -201,4 +182,43 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 		}
 	}
 	return rows, err
+}
+
+func prepareSelect(records interface{}, prefix string, tables *string, sqlFields *string, allFields *[]structFields, allValues *[]interface{}, level int) {
+	element := reflect.TypeOf(records).Elem().Elem()
+	newElementPtr := reflect.New(element)
+	// newElement := newElementPtr.Elem()
+	var prefixed string
+	if prefix != "" {
+		prefixed = prefix + "__"
+	}
+	table := underscore(element.String())
+	translationsTable := " left join \"" + prefixed + table + "_translations\" on \"" + prefixed + table + "\".\"id\"=\"" + prefixed + table + "_translations\".\"id\""
+	var from string
+	if level == 0 {
+		from = table
+	} else {
+		from = " left join \"" + prefixed + table + " on \"" + prefixed + table + "\".\"id\"=\"" + prefix + "\".\"id\""
+	}
+	values := []interface{}{}
+	fields := plainFields(&newElementPtr)
+
+	for _, field := range fields {
+		if field.name == "Translations" {
+			from = table + translationsTable
+			continue
+		}
+		if len(*sqlFields) != 1 {
+			*sqlFields += ","
+		}
+		tag := field.tag.Get("dbc")
+		match, _ := regexp.MatchString("(^|,)translation(,|$)", tag)
+		if match {
+			*sqlFields += "\"" + prefix + table + "_translations\".\"" + underscore(field.name) + "\""
+		} else {
+			*sqlFields += "\"" + prefix + table + "\".\"" + underscore(field.name) + "\""
+		}
+		values = append(values, field.addr)
+	}
+	*tables += " " + from
 }
