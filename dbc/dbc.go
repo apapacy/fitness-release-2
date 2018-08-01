@@ -208,11 +208,16 @@ func prepareSelect(records interface{}, prefix string, tables *string, sqlFields
 			from = table + translationsTable
 			continue
 		}
-		if len(*sqlFields) != 1 {
+		tag := field.tag.Get("dbc")
+		match, _ := regexp.MatchString("(^|,)ref(,|$)", tag)
+		if match && level < 3 {
+			prepareSelect(field.addr, prefixed+table, tables, sqlFields, allFields, allValues, level+1)
+			continue
+		}
+		if len(*sqlFields) != 0 {
 			*sqlFields += ","
 		}
-		tag := field.tag.Get("dbc")
-		match, _ := regexp.MatchString("(^|,)translation(,|$)", tag)
+		match, _ = regexp.MatchString("(^|,)translation(,|$)", tag)
 		if match {
 			*sqlFields += "\"" + prefix + table + "_translations\".\"" + underscore(field.name) + "\""
 		} else {
