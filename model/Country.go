@@ -21,6 +21,7 @@ type Country struct {
 	Code         sql.NullInt64
 	A2           sql.NullString
 	A3           sql.NullString
+	Capital      *City `dbc:"ref"`
 	Translations []CountryTranslations
 	CountryTranslations
 }

@@ -140,7 +140,11 @@ func Insert(db *sql.DB, record interface{}) (sql.Result, error) {
 			values = append(values, field.value.Interface())
 		} else {
 			if ref {
-				values = append(values, v.FieldByName(field.name).FieldByName("Id").Interface())
+				if v.FieldByName(field.name).IsNil() {
+					values = append(values, nil)
+				} else {
+					values = append(values, v.FieldByName(field.name).Elem().FieldByName("Id").Interface())
+				}
 			} else {
 				values = append(values, field.value.Interface())
 			}

@@ -5,6 +5,7 @@ CREATE TABLE country (
 	code bigint NOT NULL UNIQUE,
 	a2 text NOT NULL UNIQUE,
 	a3 text NOT NULL UNIQUE,
+	capital_id uuid NULL,
 	created_at timestamptz NOT NULL,
 	updated_at timestamptz NOT NULL
 );
@@ -35,6 +36,9 @@ CREATE TABLE city_translations (
 	updated_at timestamptz NOT NULL,
 	PRIMARY KEY (id, locale)
 );
+
+ALTER TABLE country 
+	ADD CONSTRAINT capital_id_fk FOREIGN KEY (capital_id) REFERENCES city ON DELETE SET NULL;
 
 CREATE TABLE firma (
 	id uuid PRIMARY KEY,

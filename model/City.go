@@ -13,7 +13,7 @@ import (
 
 type City struct {
 	Id           uuid.UUID `dbc:"pk,auto"`
-	Country      Country   `dbc:"ref"`
+	Country      *Country  `dbc:"ref"`
 	Translations []CityTransaltions
 	CityTransaltions
 }

@@ -25,19 +25,13 @@ func TestCountryInsert(t *testing.T) {
 			Locale: sql.NullString{"ua", true},
 		},
 	}
-	country2 := Country{
-		Code: sql.NullInt64{2, true},
-		A2:   sql.NullString{"3", true},
-		A3:   sql.NullString{"4", true},
-		CountryTranslations: CountryTranslations{
-			Locale: sql.NullString{"ua", true},
-		},
-	}
 	res, err := dbc.GetDB().Exec("delete from city_translations;delete from city;delete from country_translations;delete from country;")
 	fmt.Println(res)
 	fmt.Println(err)
-	dbc.Insert(dbc.GetDB(), &country1)
-	dbc.Insert(dbc.GetDB(), &country2)
+	res, err = dbc.Insert(dbc.GetDB(), &country1)
+	if err != nil {
+		panic(err)
+	}
 	country1Translarions := CountryTranslations{
 		Fullname: sql.NullString{"wewe", true},
 		Name:     sql.NullString{"wewe", true},
@@ -47,12 +41,25 @@ func TestCountryInsert(t *testing.T) {
 	dbc.Insert(dbc.GetDB(), &country1Translarions)
 	//fmt.Println("=========================================")
 	//fmt.Println(country)
-	//city := City{
-	//	Country: country,
-	//}
-	//fmt.Println("=========================================")
-	//dbc.Insert(dbc.GetDB(), &city)
-	//fmt.Println(city)
+	city := City{
+		Country: &country1,
+	}
+	fmt.Println("=========================================")
+	dbc.Insert(dbc.GetDB(), &city)
+	fmt.Println(city)
+	country2 := Country{
+		Code:    sql.NullInt64{2, true},
+		A2:      sql.NullString{"3", true},
+		A3:      sql.NullString{"4", true},
+		Capital: &city,
+		CountryTranslations: CountryTranslations{
+			Locale: sql.NullString{"ua", true},
+		},
+	}
+	res, err = dbc.Insert(dbc.GetDB(), &country2)
+	if err != nil {
+		panic(err)
+	}
 	countries := []Country{}
 	dbc.Select(dbc.GetDB(), &countries)
 	fmt.Println("444444444444444444444444444444444444")
