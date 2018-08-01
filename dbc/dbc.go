@@ -185,6 +185,8 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 }
 
 func prepareSelect(records interface{}, prefix string, tables *string, sqlFields *string, allFields *[]structFields, allValues *[]interface{}, level int) {
+	fmt.Println("-------------------------------------")
+	fmt.Println(prefix)
 	element := reflect.TypeOf(records).Elem().Elem()
 	newElementPtr := reflect.New(element)
 	// newElement := newElementPtr.Elem()
@@ -193,12 +195,12 @@ func prepareSelect(records interface{}, prefix string, tables *string, sqlFields
 		prefixed = prefix + "__"
 	}
 	table := underscore(element.String())
-	translationsTable := " left join \"" + prefixed + table + "_translations\" on \"" + prefixed + table + "\".\"id\"=\"" + prefixed + table + "_translations\".\"id\""
+	translationsTable := " left join \"" + table + "_translations\" \"" + prefixed + table + "_translations\" on \"" + prefixed + table + "\".\"id\"=\"" + prefixed + table + "_translations\".\"id\""
 	var from string
 	if level == 0 {
 		from = table
 	} else {
-		from = " left join \"" + prefixed + table + " on \"" + prefixed + table + "\".\"id\"=\"" + prefix + "\".\"id\""
+		from = " left join \"" + table + "\" \"" + prefixed + table + " on \"" + prefixed + table + "\".\"id\"=\"" + prefix + "\".\"id\" "
 	}
 	values := []interface{}{}
 	fields := plainFields(&newElementPtr)
@@ -210,7 +212,7 @@ func prepareSelect(records interface{}, prefix string, tables *string, sqlFields
 		}
 		tag := field.tag.Get("dbc")
 		match, _ := regexp.MatchString("(^|,)ref(,|$)", tag)
-		if match && level < 3 {
+		if match && level < 2 {
 			prepareSelect(field.addr, prefixed+table, tables, sqlFields, allFields, allValues, level+1)
 			continue
 		}
