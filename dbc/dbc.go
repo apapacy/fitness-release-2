@@ -204,10 +204,15 @@ func prepareSelect(records interface{}, prefix string, tables *string, sqlFields
 	}
 	values := []interface{}{}
 	fields := plainFields(&newElementPtr)
-
 	for _, field := range fields {
 		if field.name == "Translations" {
 			from = table + translationsTable
+			continue
+		}
+	}
+	*tables += " " + from
+	for _, field := range fields {
+		if field.name == "Translations" {
 			continue
 		}
 		tag := field.tag.Get("dbc")
@@ -227,5 +232,4 @@ func prepareSelect(records interface{}, prefix string, tables *string, sqlFields
 		}
 		values = append(values, field.addr)
 	}
-	*tables += " " + from
 }
