@@ -19,7 +19,7 @@ type City struct {
 }
 
 type CityTransaltions struct {
-	Locale   string `dbc:"locale"`
+	Locale   string `dbc:"locale,translation"`
 	Name     string `dbc:"translation"`
 	Fullname string `dbc:"translation"`
 	dbc.Timestamp
