@@ -67,4 +67,6 @@ func TestCountryInsert(t *testing.T) {
 	}
 	fmt.Println("444444444444444444444444444444444444")
 	fmt.Println(countries)
+	fmt.Println(*countries[0].Capital)
+	fmt.Println(*countries[1].Capital)
 }

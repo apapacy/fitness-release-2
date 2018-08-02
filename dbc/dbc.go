@@ -173,10 +173,10 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 		fmt.Println(err)
 	} else {
 		for rows.Next() {
-			//for _, row := range values {
-			//	ref := reflect.ValueOf(row).Elem()
-			//	ref.Set(reflect.Zero(ref.Type()))
-			//}
+			for _, row := range values {
+				ref := reflect.ValueOf(row).Elem()
+				ref.Set(reflect.Zero(ref.Type()))
+			}
 			rows.Scan(values...)
 			fmt.Println(values)
 
