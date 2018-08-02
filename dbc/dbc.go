@@ -160,13 +160,13 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 	returns := reflect.ValueOf(records).Elem()
 	element := reflect.TypeOf(records).Elem().Elem()
 	table := underscore(element.String())
-	newElementPtr := reflect.New(element)
-	newElement := newElementPtr.Elem()
 	fields := []structFields{}
 	values := []interface{}{}
 	tables := ""
 	sqlFields := ""
-	prepareSelect(records, "", table, &tables, &sqlFields, &fields, &values, 0)
+	newElementPtr := prepareSelect(records, "", table, &tables, &sqlFields, &fields, &values, 0)
+	newElement := newElementPtr.Elem()
+	fmt.Println(newElement.FieldByName("Capital").Elem())
 	sql := "select " + sqlFields + " from " + tables
 	fmt.Println(sql)
 	rows, err := db.Query(sql)
@@ -185,7 +185,7 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 	return rows, err
 }
 
-func prepareSelect(records interface{}, prefix string, alias string, tables *string, sqlFields *string, allFields *[]structFields, allValues *[]interface{}, level int) {
+func prepareSelect(records interface{}, prefix string, alias string, tables *string, sqlFields *string, allFields *[]structFields, allValues *[]interface{}, level int) reflect.Value {
 	fmt.Println("-------------------------------------")
 	fmt.Println(prefix)
 	element := reflect.TypeOf(records).Elem().Elem()
@@ -220,7 +220,8 @@ func prepareSelect(records interface{}, prefix string, alias string, tables *str
 		match, _ := regexp.MatchString("(^|,)ref(,|$)", tag)
 		if match {
 			if level < 2 {
-				prepareSelect(field.addr, prefixed+alias, underscore(field.name), tables, sqlFields, allFields, allValues, level+1)
+				element := prepareSelect(field.addr, prefixed+alias, underscore(field.name), tables, sqlFields, allFields, allValues, level+1)
+				field.value.Set(element)
 			}
 			continue
 		}
@@ -235,4 +236,5 @@ func prepareSelect(records interface{}, prefix string, alias string, tables *str
 		}
 		values = append(values, field.addr)
 	}
+	return newElementPtr
 }
