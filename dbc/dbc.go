@@ -166,7 +166,6 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 	sqlFields := ""
 	newElementPtr := prepareSelect(records, "", table, &tables, &sqlFields, &fields, &values, 0)
 	newElement := newElementPtr.Elem()
-	fmt.Println(newElement.FieldByName("Capital").Elem())
 	sql := "select " + sqlFields + " from " + tables
 	fmt.Println(sql)
 	rows, err := db.Query(sql)
@@ -174,14 +173,18 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 		fmt.Println(err)
 	} else {
 		for rows.Next() {
-			for _, row := range values {
-				ref := reflect.ValueOf(row).Elem()
-				ref.Set(reflect.Zero(ref.Type()))
-			}
+			//for _, row := range values {
+			//	ref := reflect.ValueOf(row).Elem()
+			//	ref.Set(reflect.Zero(ref.Type()))
+			//}
 			rows.Scan(values...)
+			fmt.Println(values)
+
 			returns.Set(reflect.Append(returns, newElement))
 		}
 	}
+	fmt.Println()
+
 	return rows, err
 }
 
@@ -190,7 +193,7 @@ func prepareSelect(records interface{}, prefix string, alias string, tables *str
 	fmt.Println(prefix)
 	element := reflect.TypeOf(records).Elem().Elem()
 	newElementPtr := reflect.New(element)
-	// newElement := newElementPtr.Elem()
+	//newElement := newElementPtr.Elem()
 	var prefixed string
 	if prefix != "" {
 		prefixed = prefix + "__"
@@ -203,7 +206,7 @@ func prepareSelect(records interface{}, prefix string, alias string, tables *str
 	} else {
 		from = " left join \"" + table + "\" \"" + prefixed + alias + "\" on \"" + prefixed + alias + "\".\"id\"=\"" + prefix + "\".\"" + alias + "_id\" "
 	}
-	values := []interface{}{}
+	// values := []interface{}{}
 	fields := plainFields(&newElementPtr)
 	for _, field := range fields {
 		if field.name == "Translations" {
@@ -219,7 +222,7 @@ func prepareSelect(records interface{}, prefix string, alias string, tables *str
 		tag := field.tag.Get("dbc")
 		match, _ := regexp.MatchString("(^|,)ref(,|$)", tag)
 		if match {
-			if level < 2 {
+			if level < 4 {
 				element := prepareSelect(field.addr, prefixed+alias, underscore(field.name), tables, sqlFields, allFields, allValues, level+1)
 				field.value.Set(element)
 			}
@@ -234,7 +237,7 @@ func prepareSelect(records interface{}, prefix string, alias string, tables *str
 		} else {
 			*sqlFields += "\"" + prefixed + alias + "\".\"" + underscore(field.name) + "\" as \"" + prefixed + alias + "_" + underscore(field.name) + "\""
 		}
-		values = append(values, field.addr)
+		*allValues = append(*allValues, field.addr)
 	}
 	return newElementPtr
 }
