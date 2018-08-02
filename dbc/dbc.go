@@ -165,7 +165,7 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 	values := []interface{}{}
 	tables := ""
 	sqlFields := ""
-	prepareSelect(records, "", &tables, &sqlFields, &fields, &values, 0)
+	prepareSelect(records, "", "", &tables, &sqlFields, &fields, &values, 0)
 	sql := "select " + sqlFields + " from " + tables
 	fmt.Println(sql)
 	rows, err := db.Query(sql)
@@ -184,7 +184,7 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 	return rows, err
 }
 
-func prepareSelect(records interface{}, prefix string, tables *string, sqlFields *string, allFields *[]structFields, allValues *[]interface{}, level int) {
+func prepareSelect(records interface{}, prefix string, alias string, tables *string, sqlFields *string, allFields *[]structFields, allValues *[]interface{}, level int) {
 	fmt.Println("-------------------------------------")
 	fmt.Println(prefix)
 	element := reflect.TypeOf(records).Elem().Elem()
@@ -199,15 +199,16 @@ func prepareSelect(records interface{}, prefix string, tables *string, sqlFields
 	var from string
 	if level == 0 {
 		from = table
+		alias = table
 	} else {
-		from = " left join \"" + table + "\" \"" + prefixed + table + " on \"" + prefixed + table + "\".\"id\"=\"" + prefix + "\".\"id\" "
+		from = " left join \"" + table + "\" \"" + prefixed + table + "\" on \"" + prefixed + table + "\".\"id\"=\"" + prefixed + "\".\"id\" "
 	}
 	values := []interface{}{}
 	fields := plainFields(&newElementPtr)
 	for _, field := range fields {
 		if field.name == "Translations" {
-			from = table + translationsTable
-			continue
+			from = from + translationsTable
+			break
 		}
 	}
 	*tables += " " + from
@@ -218,7 +219,7 @@ func prepareSelect(records interface{}, prefix string, tables *string, sqlFields
 		tag := field.tag.Get("dbc")
 		match, _ := regexp.MatchString("(^|,)ref(,|$)", tag)
 		if match && level < 2 {
-			prepareSelect(field.addr, prefixed+table, tables, sqlFields, allFields, allValues, level+1)
+			prepareSelect(field.addr, prefixed+underscore(field.name), underscore(field.name), tables, sqlFields, allFields, allValues, level+1)
 			continue
 		}
 		if len(*sqlFields) != 0 {
@@ -226,9 +227,9 @@ func prepareSelect(records interface{}, prefix string, tables *string, sqlFields
 		}
 		match, _ = regexp.MatchString("(^|,)translation(,|$)", tag)
 		if match {
-			*sqlFields += "\"" + prefix + table + "_translations\".\"" + underscore(field.name) + "\""
+			*sqlFields += "\"" + prefixed + alias + "_translations\".\"" + underscore(field.name) + "\""
 		} else {
-			*sqlFields += "\"" + prefix + table + "\".\"" + underscore(field.name) + "\""
+			*sqlFields += "\"" + prefixed + alias + "\".\"" + underscore(field.name) + "\""
 		}
 		values = append(values, field.addr)
 	}
