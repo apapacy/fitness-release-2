@@ -164,8 +164,8 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 	values := []interface{}{}
 	tables := ""
 	sqlFields := ""
-	newElementPtr := prepareSelect(records, "", table, &tables, &sqlFields, &fields, &values, 0)
-	newElement := newElementPtr.Elem()
+	prepareSelect(records, "", table, &tables, &sqlFields, &fields, &values, 0)
+	// newElement := newElementPtr.Elem()
 	sql := "select " + sqlFields + " from " + tables
 	fmt.Println(sql)
 	rows, err := db.Query(sql)
@@ -173,10 +173,12 @@ func Select(db *sql.DB, records interface{}) (*sql.Rows, error) {
 		fmt.Println(err)
 	} else {
 		for rows.Next() {
-			for _, row := range values {
-				ref := reflect.ValueOf(row).Elem()
-				ref.Set(reflect.Zero(ref.Type()))
-			}
+			fields := []structFields{}
+			values := []interface{}{}
+			tables := ""
+			sqlFields := ""
+			newElementPtr := prepareSelect(records, "", table, &tables, &sqlFields, &fields, &values, 0)
+			newElement := newElementPtr.Elem()
 			rows.Scan(values...)
 			fmt.Println(values)
 
